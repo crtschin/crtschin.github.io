@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>(Non-)Functional Ramblings - Cat... amarphisms</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/pygments.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Non-Functional Ramblings</a>
+            </div>
+            <nav>
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../static/resume.pdf">Resume</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Cat... amarphisms</h1>
+            <article>
+    <section class="header">
+        Posted on April 15, 2018
+        
+    </section>
+    <section>
+        <p>One of the first higher-order functions most students encounter in a functional programming course is the fold (foldr, foldl). A fold takes an operator, an initial value and a list, and then recursively combines each element in the list using the initial value and the given operator.</p>
+<figure>
+<img src="../images/Right-fold-transformation-1-.png" alt="The recursive combining structure of a fold" />
+<figcaption aria-hidden="true">The recursive combining structure of a fold</figcaption>
+</figure>
+<h2 id="the-easy-stuff">The Easy Stuff</h2>
+<p>A catamorphism is a generalization of the fold on lists<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><span class="sidenote"><a href="https://www.schoolofhaskell.com/user/edwardk/recursion-schemes/catamorphisms">Kmett, E. (2014, 15 Apr) Catamorphisms. School of Haskell</a><br />
+<br />
+</span></span>. The word catamorphism has its roots in the Greek word ‘κατά’ meaning ‘downwards’<span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle" /><span class="sidenote">(HaskellWiki, Catamorphisms)[https://wiki.haskell.org/Catamorphisms]<br />
+<br />
+</span></span>. In this case it is the concept of applying a fold on any algebraic data type. An algebraic data type is any data type composed of other types – as an example, take the following data type for a binary tree I will use throughout this post.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Node</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+
+<p>The following two functions both take such a Tree and recursively combines it into an Int. The first function calculates the depth, and the second how many leaves are in the tree.</p>
+<div class="highlight"><pre><span></span><span class="nf">depth</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nf">depth</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="nf">depth</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">(</span><span class="n">depth</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">depth</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="nf">count</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nf">count</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="nf">count</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>I think you can quickly see where I am going with this. These two functions both have the same structure, where for each constructor there is a function which takes some values and outputs something, sometimes recursively. Note the types of the functions used on the right-hand side of both depth and count.</p>
+<p>The type signature of the function used when handling an Empty is just an Int. For a Leaf a we implicitly get some type a, which is then thrown away, and give an Int so its type is (a -&gt; Int). The (+) in the case of the count function for a Node takes 2 parameters, both Ints. So, when trying to generalise count and depth we need some group of functions (Int, a -&gt; Int, Int -&gt; Int -&gt; Int) for the different cases. We can now define the generic function we will use to create depth and count.</p>
+<div class="highlight"><pre><span></span><span class="nf">foldTreeToInt</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="n">leaf</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fTreeToInt</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">empty</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">fTreeToInt</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fTreeToInt</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="c1">-- We can now easily define depth and count by specifying</span>
+<span class="c1">-- the group of functions</span>
+<span class="nf">depth'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">const</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nf">\</span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="nf">count'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">const</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="p">))</span>
+</pre></div>
+
+<p>The group of functions needed for the fold is called an F-algebra and maintains the structure of the underlying algebraic data type<span class="sidenote-wrapper"><label for="sn-2" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-2" class="margin-toggle" /><span class="sidenote">Jeuring, J., Swierstra, D. (2011) Languages And Compilers. Utrecht University<br />
+<br />
+</span></span>. We can generalise the fold we created to generic data types.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kt">TreeAlgebra</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+
+<span class="nf">foldTree</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">TreeAlgebra</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span>
+<span class="nf">foldTree</span><span class="w"> </span><span class="p">(</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="n">leaf</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fTree</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">empty</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">fTree</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fTree</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>When the constructors are used as the functions in the algebra, we get as output the same tree. This specific algebra is called the initial algebra and defines the identity function. The count and depth functions created using the algebra and fold are called compositional functions.</p>
+<h2 id="black-magic">Black magic</h2>
+<p>Catamorphism is a term from category theory, of which my knowledge is anything but formal (or correct). Best to hear it from someone who knows what they are talking <a href="http://chrislambda.github.io/blog/2014/01/30/catamorphisms-in-15-minutes/">about</a><span class="sidenote-wrapper"><label for="sn-3" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-3" class="margin-toggle" /><span class="sidenote"><a href="http://chrislambda.github.io/blog/2014/01/30/catamorphisms-in-15-minutes/">Jones, C (2014, 30 Jan) Catamorphisms in 15 Minutes!</a><br />
+<br />
+</span></span>.</p>
+<p>A F-algebra contains an endofunctor <code>f</code>, an object <code>a</code> and a morphism <code>f a -&gt; a</code><span class="sidenote-wrapper"><label for="sn-4" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-4" class="margin-toggle" /><span class="sidenote"><a href="https://bartoszmilewski.com/2014/10/28/category-theory-for-programmers-the-preface/">Milewski, B. (2014) Category Theory for Programmers</a><br />
+<br />
+</span></span>. A functor is a mapping between categories, where an endofunctor maps a category into itself. This can be written in haskell as type <code>Algebra f a = f a -&gt; a</code><span class="sidenote-wrapper"><label for="sn-5" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-5" class="margin-toggle" /><span class="sidenote"><a href="https://www.schoolofhaskell.com/user/bartosz/understanding-algebras">Milewski, B. (2013, 1 Oct) Understanding F-Algebras. School of Haskell</a><br />
+<br />
+</span></span>.</p>
+<p>We can use fixed points as our initial algebra. A fixed point here is when you can apply some functor f to itself and get the same type, possible in haskell as <code>newtype Fix f = Fix { unFix :: f (Fix f) }</code>. The code for writing generic catamorphisms can now be written as.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kt">Algebra</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">unFix</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+
+<span class="nf">cata</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Functor</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Algebra</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">cata</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="n">cata</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">unFix</span>
+</pre></div>
+
+<p>We can use cata to define count and depth after setting up the Functor instance of our <code>Tree</code> and the initial algebra. We also have to remove the explicit recursion from our <code>Tree</code> definition.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree'</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty'</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Node'</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="n">b</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Functor</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree'</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="kt">Empty'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty'</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Node'</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Node'</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="kr">type</span><span class="w"> </span><span class="kt">FTree'</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree'</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+
+<span class="nf">count''</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree'</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count''</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">cata</span><span class="w"> </span><span class="n">phi</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="kt">Empty'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Node'</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span>
+
+<span class="nf">depth''</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree'</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth''</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">cata</span><span class="w"> </span><span class="n">phi</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="kt">Empty'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Node'</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>The functions <code>count''</code> and <code>depth''</code> on the following example tree would evaluate to 3 and 4 respectively.</p>
+<div class="highlight"><pre><span></span><span class="c1">--  /\</span>
+<span class="c1">-- 3 /\</span>
+<span class="c1">--  1  \</span>
+<span class="c1">--      2</span>
+<span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree'</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="w"> </span><span class="n">empty</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="kt">Empty'</span>
+<span class="w">    </span><span class="n">leaf</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf'</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="n">node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Node'</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>

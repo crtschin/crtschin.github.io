@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>(Non-)Functional Ramblings - Roly, Oly, ..., Polyvariadic Boogaloo</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/pygments.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Non-Functional Ramblings</a>
+            </div>
+            <nav>
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../static/resume.pdf">Resume</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Roly, Oly, ..., Polyvariadic Boogaloo</h1>
+            <article>
+    <section class="header">
+        Posted on September 18, 2020
+        
+    </section>
+    <section>
+        <p>I started this post not long after <a href="../roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.</p>
+<p>In the previous post about polyvariadic functions, we gave some examples of how to define them in haskell using typeclass trickery. The final definitions were, however, very repetitive, as we had to define a typeclass for each of the functions. Our handy list of our ghc-specific language extensions.</p>
+<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DefaultSignatures #-}</span>
+<span class="cm">{-# LANGUAGE FlexibleContexts #-}</span>
+<span class="cm">{-# LANGUAGE FlexibleInstances #-}</span>
+<span class="cm">{-# LANGUAGE InstanceSigs #-}</span>
+<span class="cm">{-# LANGUAGE MultiParamTypeClasses #-}</span>
+<span class="cm">{-# LANGUAGE TypeFamilies #-}</span>
+</pre></div>
+
+<p>In the previous post, while I did mention type families, I did not use them anywhere. Functional dependencies are an alternative, but the general concensus is to move away from these due to inference problems.</p>
+<p>Like functions are to terms, type families are to types. Type families enable you to write type level functions. We’re going to use this to implement some way of determining what the result type is of a function.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kr">family</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w">        </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>This definition essentially recursively searches for the result type by proceeding into the right-hand side of function types. So a type signature like <code>Int -&gt; Int -&gt; Int -&gt; [Int]</code>, which we would like <code>append</code> to have in <code>append 1 2 3</code>, would map to <code>[Int]</code>. We can use this type family to define generic variants of the various typeclasses from the previous post. In this particular instance, we will attempt to write a polyvariadic variant of the fold function using this <code>Poly</code> typeclass.</p>
+<p>The typical type signature of a fold function, using <code>foldr</code> as an example, follows <code>(a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b</code>, where <code>a</code> is the argument type and <code>b</code> is the result type. We can use this as inspiration to determine what the type signature will be of our generic polyvariant fold. We already know <code>PolyRes r</code> will represent our result type, so the expression becomes <code>(a -&gt; PolyRes r -&gt; PolyRes r) -&gt; PolyRes r -&gt; [a] -&gt; r</code>. Note that the last instance of <code>r</code> isn’t prefixed by PolyRes, this is because we will be outputting the polyvariant function, not its result. Finally, we can also remove the argument list <code>[a]</code> as our arguments will be coming in incrementally at each instance resolution step at function type, <code>a -&gt; r</code>. So our final type signature is <code>(a -&gt; PolyRes r -&gt; PolyRes r) -&gt; PolyRes r -&gt; r</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>This definition, however, would require that the user would have to define an annoying amount of superfluous instances. To see why, remember how a fold is usually defined.</p>
+<div class="highlight"><pre><span></span><span class="nf">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="kt">[]</span><span class="w">       </span><span class="ow">=</span><span class="w"> </span><span class="n">z</span>
+<span class="nf">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">(</span><span class="n">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span>
+</pre></div>
+
+<p>As we’re working with typeclasses, we will have to implement the first or base case of <code>foldr</code> as an instance for each of the types we want to use as a result type of our function. This amounts to the following boilerplate.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>Using the default instance language extension, we can define the base case of the fold straight into the typeclass itself. So our typeclass definition now becomes:</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="kr">default</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span>
+<span class="w">    </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Integer</span>
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+</pre></div>
+
+<p>The above definition of <code>poly</code> in our typeclass kind of encompasses what we would expect the base case of a <code>fold</code> function to look like. The combining step, we will implement using our instance for function terms, where we assert that we have an argument of type <code>a</code> compatible with the function given to <code>poly</code>, <code>a -&gt; PolyRes r -&gt; PolyRes r</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>This instance for function types can be interpreted as: each time poly is treated as a function, we have an argument of type <code>a</code> that we can use to do a single application of the fold. After which we proceed with a recursive call to <code>poly</code>.</p>
+<p>Now we can straightforwardly define polyvariadic variants of common list functions. Note that the type signatures are required as otherwise, the type checker has problems inferring the correct types. Unfortunately, the <code>PolyRes r ~ whatever</code> type equality constraints don’t provide ghc with enough type information to be able to use the below functions ‘as is’. They have to be type annotated on usage, so in the form of <code>cons' True False True :: [Bool]</code>, etc.</p>
+<div class="highlight"><pre><span></span><span class="nf">and'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Bool</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">and'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="kt">True</span>
+
+<span class="nf">or'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Bool</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">or'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="o">||</span><span class="p">)</span><span class="w"> </span><span class="kt">False</span>
+
+<span class="nf">cons'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">])</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">cons'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="p">)</span><span class="w"> </span><span class="kt">[]</span>
+
+<span class="nf">fold'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">fold'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span>
+</pre></div>
+
+<p><em>As an excercise, try implementing a variation of <code>Poly</code> that gathers the given arguments in a list and then applies a function <code>[a] -&gt; PolyRes r</code>. This variant could be used to convert any function on lists to its corresponding polyvariadic counterpart.</em></p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>

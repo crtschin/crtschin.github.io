@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>(Non-)Functional Ramblings - Roly, Oly, ..., Polyvariadic</title>
+        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/pygments.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../">Non-Functional Ramblings</a>
+            </div>
+            <nav>
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../static/resume.pdf">Resume</a>
+                <a href="../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Roly, Oly, ..., Polyvariadic</h1>
+            <article>
+    <section class="header">
+        Posted on July  6, 2019
+        
+    </section>
+    <section>
+        <p>During my undergraduates, I followed a course called <em>Functional Programming</em>. That course mainly dealt with getting your feet wet with Haskell and some light fp theory. At that point, most students followed the course on imperative programming just half a year ago and then get blasted with the whole higher order functions deal. I definitely doubt I understood what monads were at the end of it.</p>
+<p>Now during my master’s studies, I more followed a course on Advanced Functional Programming. One of the topics that came up during the explanation of monad transformers were functional dependencies and type family extensions – these looked a lot like magic.</p>
+<p>One of the many things that are possible with these extensions, are polyvariadic functions – functions which take an arbitrary number of parameters[^polyvar]. One example included in ghc is <code>Text.PrintF</code>, which mimics the C-inspired function <code>printf</code> with its, at first glance, weird type signature <code>PrintfType r =&gt; String -&gt; r</code>.</p>
+<p>The main idea behind this is to have a function that can result in either another function or a final value. In the printf example, this is accomplished using the <code>PrintfType</code> type class.</p>
+<p>As an example, let’s define a function which sums a variable number of integers. The result of the function is either an int or a function which takes an int gives the same choice. We can keep this choice of possible types as the type variable of the class.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>Defining the instance which will lead to the final value should be easy. The type variable <code>r</code> just becomes an <code>Int</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">id</span>
+</pre></div>
+
+<p>The case where the function needs to return a function is only slightly more complex. The first instinct is to create an instance for <code>Int -&gt; r</code>. This could look like:</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+
+<p>This is, however, too limiting. Trying to execute <code>addP 1 2</code> gives an error message which, while kind of vague, gives an idea as to why.</p>
+<div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">interactive</span><span class="o">&gt;:</span><span class="mi">1</span><span class="kt">:</span><span class="mi">1</span><span class="kt">:</span><span class="w"> </span><span class="ne">error</span><span class="kt">:</span>
+<span class="w">    </span><span class="err">•</span><span class="w"> </span><span class="kt">No</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="p">(</span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="kt">Integer</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Integer</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">))</span>
+<span class="w">        </span><span class="n">arising</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span><span class="err">‘</span><span class="n">add</span><span class="err">’</span>
+<span class="w">        </span><span class="p">(</span><span class="n">maybe</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">haven't</span><span class="w"> </span><span class="n">applied</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">function</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">enough</span><span class="w"> </span><span class="n">arguments</span><span class="o">?</span><span class="p">)</span>
+<span class="w">    </span><span class="err">•</span><span class="w"> </span><span class="kt">In</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">expression</span><span class="kt">:</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">      </span><span class="kt">In</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">equation</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="err">‘</span><span class="n">it</span><span class="err">’</span><span class="kt">:</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+</pre></div>
+
+<p>The best effort hint ghc gives here is pretty useless in our case, as we clearly give 2 arguments to the function. The real problem is our usage of the plus operator and our arguments. The plus operator is defined over all instances of the <code>Num</code> type class, and integers in haskell can be anything from Int, Integer, Natural, or even Float. So using the function needs a lot more type annotations to work. This is evident by the fact that <code>addP (1 :: Int) (2 :: Int) :: Int</code> does indeed typecheck.</p>
+<p>We need to expand the cases this instance captures. One way to do this, is to use equality constraints, aka. the type level <code>~</code> operator. Writing <code>a ~ b</code> essentially means that a is equal to b. This is different from using for example <code>a</code> in every position where b would appear, because of how type class resolution works.</p>
+<p>When ghc tries to look up an instance, it tries to find any matching instances. If we only write an instance for <code>Int</code>, when it tries to match an instance for <code>Integer</code>, it can’t find anything. A different situation pops up, however, if we write an instance for <code>a</code> and then constrain that <code>a</code> to be <code>Int</code>s. This instance will always be matched due to the very generic type <code>a -&gt; r</code>, while still maintaining the <code>Int</code> constraint. Note that this will still crash if no appropriate instance can be found; trying to match <code>String</code> with an instance written with an <code>Int</code> constraint, for example, will still fail. The following works when executed with <code>addP 1 2 3 :: Int</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+
+<span class="nf">add</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">add</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="mi">0</span>
+</pre></div>
+
+<p>We can reuse the previous flow to create polyvariadic variations of <code>unwords</code> and <code>(:)</code>. The <code>lists</code> function is not an exact mirror, because of <code>(:)</code> requiring a list to append to. The last function, <code>lists</code>, just builds a list from the given arguments</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">drop</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">WordP</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">res</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">unwordP</span><span class="w"> </span><span class="p">(</span><span class="n">unwords</span><span class="w"> </span><span class="p">[</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">])</span>
+
+<span class="nf">unword</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">unword</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">unwordP</span><span class="w"> </span><span class="kt">[]</span>
+
+<span class="kr">class</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[</span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span><span class="p">]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">reverse</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">listsP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span>
+
+<span class="nf">lists</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">lists</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">listsP</span><span class="w"> </span><span class="kt">[]</span>
+</pre></div>
+
+<p>The above <code>add</code> function and <code>AddP</code> type class can be greatly improved. It currently only accepts arguments of type <code>Int</code>, while the only operator it makes use of, <code>(+)</code>, is defined over all instances of the <code>Num</code> type class. Ideally, we would like our function to also be defined over those same instances. Examples of what we would have liked to see are:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+<span class="mi">6</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mf">2.4</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Float</span>
+<span class="mf">6.4</span>
+</pre></div>
+
+<p>We can use the <code>Num</code> constraint in the type class definition and instance declarations to achieve this, in most cases this just means switching out the <code>Int</code>s with the constrained variable. We also add an extra type variable which will contain the information over which type we’re currently operating.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>One problem is the instance we write for values. We can’t really write an instance for <code>(Num a, a ~ r) =&gt; Add a r</code>, because the <code>r</code> type variable is too generic and captures too much.</p>
+<p>One solution to this problem is the <em>OverlappingInstances</em> extension. This extension allows multiple instance definitions to be written where the applicable types overlap. In our case the <code>Add a r</code> instance would overlap with any other instance for <code>Add</code>, like <code>Add a (a -&gt; r)</code>.</p>
+<p>We can, in a limited capacity, annotate specific instances to be preferred over others. So in situations where both <code>Add a r</code> and <code>Add a (a -&gt; r)</code> matched, we would prefer that <code>Add a (a -&gt; r)</code> be picked. The resulting definitions are:</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="cm">{-# OVERLAPPABLE #-}</span><span class="w"> </span><span class="p">(</span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">id</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="cm">{-# OVERLAPPING #-}</span><span class="w"> </span><span class="p">(</span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">a'</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="n">a'</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addN</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+
+<p>One big annoyance is the fact that we have to create a type class per polyvariadic function. Next time we’ll try and look at approaches to generalizing this process.</p>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>
