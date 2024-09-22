@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>(Non-)Functional Ramblings - Lazy-ing in My Pool</title>
+        <link rel="stylesheet" href="../../css/default.css" />
+        <link rel="stylesheet" href="../../css/pygments.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <div class="logo">
+                <a href="../../">Non-Functional Ramblings</a>
+            </div>
+            <nav>
+                <a href="../../">Home</a>
+                <a href="../../about.html">About</a>
+                <a href="../../static/resume.pdf">Resume</a>
+                <a href="../../archive.html">Archive</a>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1>Lazy-ing in My Pool</h1>
+            <article>
+    <section class="header">
+        Posted on October  1, 2024
+        
+    </section>
+    <section>
+        <p>An interesting small problem came up at work recently. I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand, to avoid paying the price of initializing the entire pool when I might only need to do a singular action using one resource.</p>
+<p>It’ll be hard to showcase this without an actual resource and usecase to try it out on. As the running example, imagine some usecase where we might have a pool of file handle readers connected over a network-attached disk, where the work we intend to do on each file contents’ is also non-trivial.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
+
+<span class="nf">doWork</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">doWork</span><span class="w"> </span><span class="n">fileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">readArguments</span><span class="w"> </span><span class="n">fileHandle</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">ackermann</span>
+</pre></div>
+
+<p>I’ll start with initializing a single resource lazily and only afterwards create a pool from these. Doing anything with resources implies using something like <code>bracket</code> to ensure finalization in the presence of exceptions. Though <code>bracket</code> isn’t enough by itself in this case, as <code>bracket</code> implies strict usage of the resource.</p>
+<p>What we can do, however, is create an explicitly lazy wrapper around initializing our resources and use that within bracket instead.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">LazyResource</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="ow">=</span><span class="w"> </span><span class="kt">Uninitialized</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="kt">Initialized</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="kt">Finalized</span>
+</pre></div>
+
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>

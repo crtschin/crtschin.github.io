@@ -1,4 +1,4 @@
-<p>Copyright (c) 2009 - 2017, Curtis Chin Jen Sem</p>
+<p>Copyright (c) 2009 - 2024, Curtis Chin Jen Sem</p>
 <p>All rights reserved.</p>
 <p>Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
