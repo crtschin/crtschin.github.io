@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"
+    xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <channel>
+        <title>(Non-)Functional Ramblings</title>
+        <link>https://crtschin.com</link>
+        <description><![CDATA[A blog maintained by some guy that likes functional programming.]]></description>
+        <atom:link href="https://crtschin.com/rss.xml" rel="self"
+                   type="application/rss+xml" />
+        <lastBuildDate>Fri, 01 Nov 2024 00:00:00 UT</lastBuildDate>
+        <item>
+    <title>Harder-coded</title>
+    <link>https://crtschin.com/drafts/posts/2024-11-01-harder-coded.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on November  1, 2024
+        
+    </section>
+    <section>
+        
+    </section>
+</article>
+]]></description>
+    <pubDate>Fri, 01 Nov 2024 00:00:00 UT</pubDate>
+    <guid>https://crtschin.com/drafts/posts/2024-11-01-harder-coded.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Lazy-ing in My Pool</title>
+    <link>https://crtschin.com/drafts/posts/2024-10-01-lazying-in-my-pool.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on October  1, 2024
+        
+    </section>
+    <section>
+        <p>I encountered an interesting problem recently, where I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand, to avoid paying the price of initializing the entire pool when I might only need to do a singular action using one resource.</p>
+<p>Imagine some usecase where we might have a pool of files we need to read over the network and some work we intend to do on each file contents. This <code>FileHandle</code> is the resource we’ll manually manage.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
+
+<span class="nf">doWork</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">doWork</span><span class="w"> </span><span class="n">fileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">readArguments</span><span class="w"> </span><span class="n">fileHandle</span><span class="w"> </span><span class="o">&gt;&gt;=</span><span class="w"> </span><span class="n">process</span>
+</pre></div>
+
+<h2 id="explicit-lazy-resources">Explicit Lazy Resources</h2>
+<p>I’ll start with initializing a single resource lazily and only afterwards create a pool from there. Doing anything with resources implies using something like <code>bracket</code> to ensure finalization in the presence of exceptions. Though <code>bracket</code> isn’t enough by itself in this case, as <code>bracket</code> implies strict usage of the resource. What we can do, however, is create an explicitly lazy wrapper around initializing our resources and use that within bracket instead.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">LazyResource</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="ow">=</span><span class="w"> </span><span class="kt">Uninitialized</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="kt">Initialized</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="kt">Finalized</span>
+</pre></div>
+
+<p>We’ll need something extra to maintain what state the resource currently exists in, however. We could do something <code>State</code>-style and do <code>LazyResource a -&gt; (LazyResource a, r)</code>, but while concrete, that’s not very user friendly, and also not threadsafe. Alternatively, we could wrap the lazy wrapper and persist the resource’s state in an <code>MVar</code> cell.</p>
+<div class="highlight"><pre><span></span><span class="c1">-- | Anytime we use the resource, we trigger the deferred the initialization.</span>
+<span class="nf">withLazyResource</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MVar</span><span class="w"> </span><span class="p">(</span><span class="kt">LazyResource</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">withLazyResource</span><span class="w"> </span><span class="n">lazyResourceRef</span><span class="w"> </span><span class="n">continuation</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mask</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="nf">\</span><span class="n">restore</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">  </span><span class="n">lazyResource</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">takeMVar</span><span class="w"> </span><span class="n">lazyResourceRef</span>
+<span class="w">  </span><span class="c1">-- We always have to ensure we put back the resource into the cell, to ensure</span>
+<span class="w">  </span><span class="c1">-- any waiting, are unblocked</span>
+<span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">putBackVerbatim</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">putMVar</span><span class="w"> </span><span class="n">lazyResourceRef</span><span class="w"> </span><span class="n">lazyResource</span>
+<span class="w">  </span><span class="n">resource</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">lazyResource</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="kt">Uninitialized</span><span class="w"> </span><span class="n">initializer</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">      </span><span class="n">restore</span><span class="w"> </span><span class="n">initializer</span><span class="w"> </span><span class="p">`</span><span class="n">onException</span><span class="p">`</span><span class="w"> </span><span class="n">putBackVerbatim</span>
+<span class="w">    </span><span class="kt">Initialized</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">pure</span><span class="w"> </span><span class="n">resource</span>
+<span class="w">    </span><span class="kt">Finalized</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">      </span><span class="n">putBackVerbatim</span>
+<span class="w">      </span><span class="ne">error</span><span class="w"> </span><span class="s">&quot;Attempted to use a resource after it has been finalized&quot;</span>
+
+<span class="w">  </span><span class="c1">-- Same as the above, but we&#39;ve now initialized the resource.</span>
+<span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">putInitialized</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">putMVar</span><span class="w"> </span><span class="n">lazyResourceRef</span><span class="w"> </span><span class="p">(</span><span class="kt">Initialized</span><span class="w"> </span><span class="n">resource</span><span class="p">)</span>
+<span class="w">  </span><span class="n">result</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">restore</span><span class="w"> </span><span class="p">(</span><span class="n">continuation</span><span class="w"> </span><span class="n">resource</span><span class="p">)</span><span class="w"> </span><span class="p">`</span><span class="n">onException</span><span class="p">`</span><span class="w"> </span><span class="n">putInitialized</span>
+<span class="w">  </span><span class="n">putInitialized</span>
+<span class="w">  </span><span class="n">pure</span><span class="w"> </span><span class="n">result</span>
+</pre></div>
+
+<p>Some care has to be taken when exceptions are involved, and to ensure that the <code>MVar</code> is never left empty, even while initializing the resource in the first place! It is preferable that every thread depending on the resource fails, instead of being deadlocked on the thread that held the resource and died.</p>
+<p>Creating one of these <code>MVar (LazyResource FileHandle)</code> is left as an exercise to the reader. It should take care of deferring both the initialization as well as finalization of the underlying resource, if needed.</p>
+<h2 id="lazy-pools">Lazy Pools</h2>
+<p>Creating pools of these lazy resources is not much different than pools of any manually managed resources, ensuring that each initialization is paired with a corresponding finalization. In actuality, you’ll likely want something that already exists like <a href="https://hackage.haskell.org/package/resource-pool">resource-pool</a>. But I’ll show a small simple alternative.</p>
+<p>Keeping it simple, I’ll keep track of all resources in the pool in a simple list, along with a quantity semaphore that ensures we don’t exceed the intended number of resources.</p>
+<div class="highlight"><pre><span></span>data Pool a = Pool
+  { resources :: IORef [a]
+  , occupancy :: QSem
+  }
+</pre></div>
+
+<p>For nesting consecutive <code>with</code>-like functions, there’s a neat trick you can do with <code>kan-extensions</code>’ <code>Codensity</code> wrapper.</p>
+<div class="highlight"><pre><span></span><span class="nf">withPool</span>
+<span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">r</span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="kt">Pool</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">b</span><span class="p">)</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">b</span>
+<span class="nf">withPool</span><span class="w"> </span><span class="n">withResource</span><span class="w"> </span><span class="n">poolSize</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">  </span><span class="kr">let</span><span class="w"> </span><span class="n">withPoolResources</span><span class="w"> </span><span class="ow">=</span>
+<span class="w">        </span><span class="n">runCodensity</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">replicateM</span><span class="w"> </span><span class="n">poolSize</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Codensity</span><span class="w"> </span><span class="n">withResource</span>
+
+<span class="w">  </span><span class="n">withPoolResources</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="nf">\</span><span class="n">resources</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="n">poolResources</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">newIORef</span><span class="w"> </span><span class="n">resources</span>
+<span class="w">    </span><span class="n">qSem</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">newQSem</span><span class="w"> </span><span class="n">poolSize</span>
+<span class="w">    </span><span class="n">action</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Pool</span><span class="w"> </span><span class="n">poolResources</span><span class="w"> </span><span class="n">qSem</span>
+</pre></div>
+
+<p>That’s it! Using the pool is should be straightforward, keeping the resources in the pool and the semaphore in sync, while masking exceptions via <code>bracket</code>. And it can be combined with <code>withLazyResource</code> to handle lazy resources transparently.</p>
+    </section>
+</article>
+]]></description>
+    <pubDate>false</pubDate>
+    <guid>https://crtschin.com/drafts/posts/2024-10-01-lazying-in-my-pool.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>What’s in the Name?</title>
+    <link>https://crtschin.com/posts/2024-09-20-all-about-representations.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on September 20, 2024
+        
+    </section>
+    <section>
+        <p>As when doing anything with a dependent language, the biggest part of my Master’s thesis was about finding the correct way to phrase things<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">As a quick summary, my thesis was to give a automated proof of correctness of forward-mode AD in Coq.<br />
+<br />
+</span></span>. I learned that there are quite a few ways to phrase a lambda calculus within a functional language. I’ll go over a few of them, each time writing a catamorphic interpreter<span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><span class="sidenote">The recursion-scheme interpreter approach will be almost identical to Michael Peyton Jones’ in <a href="https://www.michaelpj.com/blog/2018/04/08/catamorphic-lc-interpreter.html">this</a> blog post.<br />
+<br />
+</span></span><span class="sidenote-wrapper"><label for="sn-2" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-2" class="margin-toggle"/><span class="sidenote">And the obligatory list of language extensions I’ll be using.<br />
+<br />
+</span></span>.</p>
+<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE GHC2021 #-}</span>
+<span class="cm">{-# LANGUAGE DerivingStrategies #-}</span>
+<span class="cm">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="cm">{-# LANGUAGE TemplateHaskell #-}</span>
+<span class="cm">{-# LANGUAGE TypeFamilies #-}</span>
+</pre></div>
+
+<h2 id="in-on-the-ground-floor">In On the Ground Floor</h2>
+<p>The first one I’ll go over, are first-order representations, i.e. if you simply deeply embed everything. These representations require you to build much of the semantics of the lambda calculus yourself. Even within this, you can already vary quite a bit by using for example de bruijn indices instead of string variables, to avoid the problem of shadowing.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kt">Var</span><span class="w"> </span><span class="kt">Text</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Lambda</span><span class="w"> </span><span class="kt">Text</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">App</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Constant</span><span class="w"> </span><span class="kt">Double</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Mul</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">Expr</span>
+</pre></div>
+
+<p>I can show some example expressions<span class="sidenote-wrapper"><label for="sn-3" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-3" class="margin-toggle"/><span class="sidenote">I used some shortcuts to make it a bit easier to read.<br />
+<br />
+</span></span>. I’ll also be making use of the base functor version of this datatype, which replaces all recursive usages of <code>Expr</code> with a type variable, essentially making it possible to disconnect a node from the expression abstract syntax tree.</p>
+<div class="highlight"><pre><span></span><span class="nf">increment</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="nf">increment</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fun</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="w"> </span><span class="p">(</span><span class="n">var</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="w"> </span><span class="o">|+|</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+
+<span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span>
+<span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">increment</span><span class="w"> </span><span class="p">`</span><span class="n">app</span><span class="p">`</span><span class="w"> </span><span class="p">(</span><span class="n">con</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">|*|</span><span class="w"> </span><span class="n">con</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+
+<p>To continue with the interpreter, I need to define the result of our lambda expressions. Many will terminate into a singular <code>Double</code>, but many more will halt due to incorrect information or incorrect typed expressions.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kt">Value</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span>
+<span class="w">  </span><span class="kt">Suspend</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Text</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span>
+<span class="w">  </span><span class="kt">Halt</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Env</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span>
+
+<span class="kr">type</span><span class="w"> </span><span class="kt">Env</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Map</span><span class="o">.</span><span class="kt">Map</span><span class="w"> </span><span class="kt">Text</span><span class="w"> </span><span class="p">(</span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span><span class="p">)</span>
+</pre></div>
+
+<p>This defines all terminal states our interpreter can land in.</p>
+<ul>
+<li><code>Value</code>: If it finish with a singular <code>Double</code>, then we’ve have evaluated the entire expression.</li>
+<li><code>Suspend</code>: This encodes function values. The first parameter consists of the binder we’ll use in the abstraction. The second parameter encodes the body of the abstraction, but requires a bit more explanation. As we’re building the lambda interpreter completely ourselves, the body of the abstraction will result in a value, but only within this interpreter context <code>m</code>. This context will hold all binders and their values and ensure they’re propogates around.</li>
+<li><code>Halt</code>: Lastly we have a constructor we can use to communicate incorrect expressions, such as attempting to reference a free variable or applying a function to a number.</li>
+</ul>
+<p>With that in place, we can tontinue to concretely define the evaluation context. We know that we need to keep track of the currently bound variables and which values they are bound to. So the evaluation context consists of an environment where we can access and keep track of these variables.</p>
+<div class="highlight"><pre><span></span><span class="c1">-- Note that this is definition is recursive, as the variables themselves are each also bound within a certain evaluation environment.</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">EvalM</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">EvalM</span><span class="w"> </span><span class="p">{</span><span class="n">unEvalM</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Reader</span><span class="w"> </span><span class="p">(</span><span class="kt">Env</span><span class="w"> </span><span class="kt">EvalM</span><span class="p">)</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+<span class="w">  </span><span class="kr">deriving</span><span class="w"> </span><span class="kr">newtype</span>
+<span class="w">    </span><span class="p">(</span><span class="w"> </span><span class="kt">Functor</span>
+<span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="kt">Applicative</span>
+<span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="kt">Monad</span>
+<span class="w">    </span><span class="p">,</span><span class="w"> </span><span class="kt">MonadReader</span><span class="w"> </span><span class="p">(</span><span class="kt">Env</span><span class="w"> </span><span class="kt">EvalM</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span>
+</pre></div>
+
+<p>Defining the interpreter for this lambda calculus is pretty straightforward from here on out. Let’s continue on section by section.</p>
+<div class="highlight"><pre><span></span><span class="nf">interpret</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="kt">EvalM</span>
+<span class="nf">interpret</span><span class="w"> </span><span class="n">expr</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">runReader</span><span class="w"> </span><span class="p">(</span><span class="n">unEvalM</span><span class="w"> </span><span class="p">(</span><span class="n">cata</span><span class="w"> </span><span class="n">go</span><span class="w"> </span><span class="n">expr</span><span class="p">))</span><span class="w"> </span><span class="n">mempty</span>
+<span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="o">...</span>
+</pre></div>
+
+<p>This fun bit is the recursion-schemes part of the interpreter. We fold into a monadic action containing the evaluation context, which we subsequently run with an empty environment.</p>
+<div class="highlight"><pre><span></span><span class="w">  </span><span class="n">go</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MonadReader</span><span class="w"> </span><span class="p">(</span><span class="kt">Env</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">ExprF</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span><span class="p">))</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="kt">Value</span><span class="w"> </span><span class="n">m</span><span class="p">)</span>
+<span class="w">  </span><span class="n">go</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="o">...</span>
+</pre></div>
+
+<p>Next is the helper function signature which takes care of each layer of our recursive data type. Each layer, denoted by the <code>ExprF</code> recursive datatype we generated, represeents a “node” in our original AST in isolation. Projecting and embedding this <code>ExprF</code> within any large recursive <code>Expr</code> is what makes the <a href="https://hackage.haskell.org/package/recursion-schemes"><code>recursion-schemes</code></a> package so flexible.</p>
+<div class="highlight"><pre><span></span><span class="w">    </span><span class="kt">VarF</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">      </span><span class="n">env</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">ask</span>
+<span class="w">      </span><span class="kr">case</span><span class="w"> </span><span class="kt">Map</span><span class="o">.</span><span class="n">lookup</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">        </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">pure</span><span class="w"> </span><span class="p">(</span><span class="kt">Halt</span><span class="w"> </span><span class="n">env</span><span class="w"> </span><span class="p">(</span><span class="n">pure</span><span class="w"> </span><span class="p">(</span><span class="kt">Var</span><span class="w"> </span><span class="n">v</span><span class="p">)))</span>
+<span class="w">        </span><span class="kt">Just</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">pure</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="kt">LambdaF</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">      </span><span class="n">pure</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Suspend</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">b</span>
+<span class="w">    </span><span class="kt">AppF</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="n">e2</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">      </span><span class="n">e2&#39;</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">e2</span>
+<span class="w">      </span><span class="n">e1&#39;</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">e1</span>
+<span class="w">      </span><span class="kr">case</span><span class="w"> </span><span class="n">e1&#39;</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">        </span><span class="kt">Suspend</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">local</span><span class="w"> </span><span class="p">(</span><span class="kt">Map</span><span class="o">.</span><span class="n">insert</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="n">e2&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">c</span>
+<span class="w">        </span><span class="kr">_</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">pure</span><span class="w"> </span><span class="n">e1&#39;</span>
+</pre></div>
+
+<p>Variables, abstractions and function application all follow from how we set up our environment. I used a <code>Map</code> to keep track of which variable names correspond to which values, so variable references reduce to a simple lookup. Function abstractions suspend the current computation, and monadic action containing the environment representing the body. And for function application, we have to ensure we insert the applied value to the bound name of the suspension, into the environment.</p>
+<p>The last few constructors are ones I add for this specific lambda calculus, filling it in can be left as an exercise to the reader. The only thing is that it uses a strict semantics, but it is otherwise non-noteworthy.</p>
+<h2 id="from-the-ground-up">From the Ground Up</h2>
+<p>By keeping a flat first order representation of our language, I had to build much of the operational machinery alongside it in the interpreter. But we can avoid that if we “loan” some functionality from the underlying programming language we’re writing it in. This is where it becomes quite difficult to keep the recursion scheme approach, so let’s ditch that for a second. Instead, we’ll make it so our language is typed, i.e. it will be impossible to represent incorrectly typed terms.</p>
+<p>We first define our type system, which consists of real values, and function types. Using GADT syntax we can then indicate what the type is of each (sub-)expression while we define it.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Ty</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kt">R</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Ty</span>
+<span class="w">  </span><span class="kt">Arrow</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Ty</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Ty</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Ty</span>
+
+<span class="kr">data</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Ty</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Type</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kt">Lambda</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Expr</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="p">(</span><span class="kt">Arrow</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+<span class="w">  </span><span class="kt">App</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="p">(</span><span class="kt">Arrow</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="n">t</span>
+<span class="w">  </span><span class="kt">Constant</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span>
+<span class="w">  </span><span class="kt">Add</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span>
+<span class="w">  </span><span class="kt">Mul</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="kt">R</span>
+</pre></div>
+
+<p>Notice that I omitted variable bindings and instead use Haskell’s function type to embed our lambda expressions. This ensures that the binder in the lambda expression will always be of the correct type. This trick of embedding variable binders in the host language is generally called HOAS (higher order abstract syntax)<span class="sidenote-wrapper"><label for="sn-4" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-4" class="margin-toggle"/><span class="sidenote">Handling variable binders can get quite convoluted, not because it is difficult, but because it can be quite tedious. These alternative representations, because much of it relies on the host language, lighten implementation load. This is especially true when proofing. <a href="http://adam.chlipala.net/cpdt/html/Hoas.html">Here’s a nice resource</a>.<br />
+<br />
+</span></span></p>
+<p>One downside of this specific version of HOAS, is that it becomes impossible to introspect the lambda abstraction’s structure, becaues it now exists as a function. This unfortunately means that we can’t use recursion schemes. As a benefit, however, the interpreter is trivial.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="kt">Value</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Double</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="kt">R</span>
+<span class="w">  </span><span class="kt">Suspend</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Expr</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="p">(</span><span class="kt">Arrow</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+
+<span class="nf">interpret</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Expr</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Value</span><span class="w"> </span><span class="n">t</span>
+<span class="nf">interpret</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">case</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">  </span><span class="kt">Lambda</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Suspend</span><span class="w"> </span><span class="n">e1</span>
+<span class="w">  </span><span class="kt">App</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="n">e2</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="kr">case</span><span class="w"> </span><span class="n">interpret</span><span class="w"> </span><span class="n">e1</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">      </span><span class="kt">Suspend</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">interpret</span><span class="w"> </span><span class="p">(</span><span class="n">b</span><span class="w"> </span><span class="n">e2</span><span class="p">)</span>
+<span class="w">  </span><span class="o">...</span>
+</pre></div>
+
+<p>Note that in the <code>interpret</code> call in the case of function application, I don’t even have to handle the <code>Value</code> case! GHC is able to infer that it is impossible (if this expression correctly went through type checking, no unsafe shenanigans) for the result of that <code>interpret</code> call to result in anything other than <code>Suspend</code>.<span class="sidenote-wrapper"><label for="sn-5" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-5" class="margin-toggle"/><span class="sidenote">I can probably write another blogpost about why I think that the future can only really point to dependent types. Being able to utilize static value-level information to optimize and eliminate entire branches of logic, is just too attractive. Programs that are not only correct, but also optimally represented.<br />
+<br />
+</span></span></p>
+<p>I’ll leave it here for now. Turning data into functions or functions into data can have interesting consequences depending on the usecase.</p>
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2024-09-20-all-about-representations.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Roly, Oly, ..., Polyvariadic Boogaloo</title>
+    <link>https://crtschin.com/posts/2020-09-18-roly-oly-polyvariadic-boogaloo.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on September 18, 2020
+        
+    </section>
+    <section>
+        <p>I started this post not long after <a href="/roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.</p>
+<p>In the previous post about polyvariadic functions, we gave some examples of how to define them in haskell using typeclass trickery. The final definitions were, however, very repetitive, as we had to define a typeclass for each of the functions. Our handy list of our ghc-specific language extensions.</p>
+<div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DefaultSignatures #-}</span>
+<span class="cm">{-# LANGUAGE FlexibleContexts #-}</span>
+<span class="cm">{-# LANGUAGE FlexibleInstances #-}</span>
+<span class="cm">{-# LANGUAGE InstanceSigs #-}</span>
+<span class="cm">{-# LANGUAGE MultiParamTypeClasses #-}</span>
+<span class="cm">{-# LANGUAGE TypeFamilies #-}</span>
+</pre></div>
+
+<p>In the previous post, while I did mention type families, I did not use them anywhere. Functional dependencies are an alternative, but the general concensus is to move away from these due to inference problems.</p>
+<p>Like functions are to terms, type families are to types. Type families enable you to write type level functions. We’re going to use this to implement some way of determining what the result type is of a function.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kr">family</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w">        </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>This definition essentially recursively searches for the result type by proceeding into the right-hand side of function types. So a type signature like <code>Int -&gt; Int -&gt; Int -&gt; [Int]</code>, which we would like <code>append</code> to have in <code>append 1 2 3</code>, would map to <code>[Int]</code>. We can use this type family to define generic variants of the various typeclasses from the previous post. In this particular instance, we will attempt to write a polyvariadic variant of the fold function using this <code>Poly</code> typeclass.</p>
+<p>The typical type signature of a fold function, using <code>foldr</code> as an example, follows <code>(a -&gt; b -&gt; b) -&gt; b -&gt; [a] -&gt; b</code>, where <code>a</code> is the argument type and <code>b</code> is the result type. We can use this as inspiration to determine what the type signature will be of our generic polyvariant fold. We already know <code>PolyRes r</code> will represent our result type, so the expression becomes <code>(a -&gt; PolyRes r -&gt; PolyRes r) -&gt; PolyRes r -&gt; [a] -&gt; r</code>. Note that the last instance of <code>r</code> isn’t prefixed by PolyRes, this is because we will be outputting the polyvariant function, not its result. Finally, we can also remove the argument list <code>[a]</code> as our arguments will be coming in incrementally at each instance resolution step at function type, <code>a -&gt; r</code>. So our final type signature is <code>(a -&gt; PolyRes r -&gt; PolyRes r) -&gt; PolyRes r -&gt; r</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>This definition, however, would require that the user would have to define an annoying amount of superfluous instances. To see why, remember how a fold is usually defined.</p>
+<div class="highlight"><pre><span></span><span class="nf">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="kt">[]</span><span class="w">       </span><span class="ow">=</span><span class="w"> </span><span class="n">z</span>
+<span class="nf">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="p">(</span><span class="n">foldr</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span>
+</pre></div>
+
+<p>As we’re working with typeclasses, we will have to implement the first or base case of <code>foldr</code> as an instance for each of the types we want to use as a result type of our function. This amounts to the following boilerplate.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>Using the default instance language extension, we can define the base case of the fold straight into the typeclass itself. So our typeclass definition now becomes:</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="kr">default</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span>
+<span class="w">    </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="kt">Integer</span>
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">[</span><span class="n">r</span><span class="p">]</span>
+</pre></div>
+
+<p>The above definition of <code>poly</code> in our typeclass kind of encompasses what we would expect the base case of a <code>fold</code> function to look like. The combining step, we will implement using our instance for function terms, where we assert that we have an argument of type <code>a</code> compatible with the function given to <code>poly</code>, <code>a -&gt; PolyRes r -&gt; PolyRes r</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">  </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>This instance for function types can be interpreted as: each time poly is treated as a function, we have an argument of type <code>a</code> that we can use to do a single application of the fold. After which we proceed with a recursive call to <code>poly</code>.</p>
+<p>Now we can straightforwardly define polyvariadic variants of common list functions. Note that the type signatures are required as otherwise, the type checker has problems inferring the correct types. Unfortunately, the <code>PolyRes r ~ whatever</code> type equality constraints don’t provide ghc with enough type information to be able to use the below functions ‘as is’. They have to be type annotated on usage, so in the form of <code>cons' True False True :: [Bool]</code>, etc.</p>
+<div class="highlight"><pre><span></span><span class="nf">and&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Bool</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">and&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="kt">True</span>
+
+<span class="nf">or&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Bool</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">or&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="o">||</span><span class="p">)</span><span class="w"> </span><span class="kt">False</span>
+
+<span class="nf">cons&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">])</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">cons&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span><span class="w"> </span><span class="p">(</span><span class="kt">:</span><span class="p">)</span><span class="w"> </span><span class="kt">[]</span>
+
+<span class="nf">fold&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Poly</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="kt">PolyRes</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">s</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">fold&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">poly</span>
+</pre></div>
+
+<p><em>As an excercise, try implementing a variation of <code>Poly</code> that gathers the given arguments in a list and then applies a function <code>[a] -&gt; PolyRes r</code>. This variant could be used to convert any function on lists to its corresponding polyvariadic counterpart.</em></p>
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2020-09-18-roly-oly-polyvariadic-boogaloo.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Roly, Oly, ..., Polyvariadic</title>
+    <link>https://crtschin.com/posts/2019-07-06-roly-oly-polyvariadic.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on July  6, 2019
+        
+    </section>
+    <section>
+        <p>During my undergraduates, I followed a course called <em>Functional Programming</em>. That course mainly dealt with getting your feet wet with Haskell and some light fp theory. At that point, most students followed the course on imperative programming just half a year ago and then get blasted with the whole higher order functions deal. I definitely doubt I understood what monads were at the end of it.</p>
+<p>Now during my master’s studies, I followed a course on “Advanced Functional Programming”. One of the topics that came up during the explanation of monad transformers were functional dependencies and type families – these looked a lot like magic.</p>
+<p>One of the many things that is possible with these extensions, is polyvariadic functions, functions which take an arbitrary number of parameters<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote"><a href="http://okmij.org/ftp/Haskell/polyvariadic.html#polyvar-fn">An explanation of the polyvariadic function technique</a>”<br />
+<br />
+</span></span>. One example included in ghc is <code>Text.PrintF</code>, which mimics the C-inspired function <code>printf</code> with its, at first glance, weird type signature <code>PrintfType r =&gt; String -&gt; r</code>.</p>
+<p>The main idea behind this, is to have a function that can result in either another function or a final value. In the printf example, this is accomplished using the <code>PrintfType</code> type class.</p>
+<p>As an example, let’s define a function which sums a variable number of integers. The result of the function is either an int or a function which takes an int, and gives the same choice. We can keep this choice of possible types as the type variable of the class.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>Defining the instance which will lead to the final value should be easy. The type variable <code>r</code> just becomes an <code>Int</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">id</span>
+</pre></div>
+
+<p>The case where the function needs to return a function is only slightly more complex. The first instinct is to create an instance for <code>Int -&gt; r</code>. This could look like:</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+
+<p>This is, however, too limiting. Trying to execute <code>addP 1 2</code> gives an error message which, while kind of vague, gives an idea as to why.</p>
+<div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">interactive</span><span class="o">&gt;:</span><span class="mi">1</span><span class="kt">:</span><span class="mi">1</span><span class="kt">:</span><span class="w"> </span><span class="ne">error</span><span class="kt">:</span>
+<span class="w">    </span><span class="err">•</span><span class="w"> </span><span class="kt">No</span><span class="w"> </span><span class="kr">instance</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="p">(</span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="kt">Integer</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Integer</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">))</span>
+<span class="w">        </span><span class="n">arising</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">use</span><span class="w"> </span><span class="kr">of</span><span class="w"> </span><span class="err">‘</span><span class="n">add</span><span class="err">’</span>
+<span class="w">        </span><span class="p">(</span><span class="n">maybe</span><span class="w"> </span><span class="n">you</span><span class="w"> </span><span class="n">haven&#39;t</span><span class="w"> </span><span class="n">applied</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">function</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">enough</span><span class="w"> </span><span class="n">arguments</span><span class="o">?</span><span class="p">)</span>
+<span class="w">    </span><span class="err">•</span><span class="w"> </span><span class="kt">In</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">expression</span><span class="kt">:</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+<span class="w">      </span><span class="kt">In</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="n">equation</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="err">‘</span><span class="n">it</span><span class="err">’</span><span class="kt">:</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+</pre></div>
+
+<p>The best effort hint ghc gives here is pretty useless in our case, as we clearly give 2 arguments to the function. The real problem is our usage of the plus operator and our arguments. The plus operator is defined over all instances of the <code>Num</code> type class, and integers in haskell can be anything from Int, Integer, Natural, or even Float. So using the function needs a lot more type annotations to work. This is evident by the fact that <code>addP (1 :: Int) (2 :: Int) :: Int</code> does indeed typecheck.</p>
+<p>We need to expand the cases this instance captures. One way to do this, is to use equality constraints, aka. the type level <code>~</code> operator. Writing <code>a ~ b</code> means that we additionally require that <code>a</code> and <code>b</code> should be nominally equal. This is different from using, for example just <code>a</code> in every position where <code>b</code> would appear.</p>
+<p>When ghc tries to look up an instance, it tries to find any matching instances. If we only write an instance for <code>Int</code>, when it tries to match an instance for <code>Integer</code>, it can’t find anything. A different situation pops up, however, if we write an instance for <code>a</code> and then constrain that <code>a</code> to be <code>Int</code>s. This instance will always be matched due to the very generic type <code>a -&gt; r</code>, while still maintaining the <code>Int</code> constraint. Note that this will still crash if no appropriate instance can be found; trying to match <code>String</code> with an instance written with an <code>Int</code> constraint, for example, will still fail. The following works when executed with <code>addP 1 2 3 :: Int</code>.</p>
+<div class="highlight"><pre><span></span><span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">AddP</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addP</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+
+<span class="nf">add</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">AddP</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">add</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addP</span><span class="w"> </span><span class="mi">0</span>
+</pre></div>
+
+<p>We can reuse the previous flow to create polyvariadic variations of <code>unwords</code> and <code>(:)</code>. The <code>lists</code> function is not an exact mirror, because of <code>(:)</code> requiring a list to append to. The last function, <code>lists</code>, just builds a list from the given arguments</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">drop</span><span class="w"> </span><span class="mi">1</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">WordP</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">res</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">res</span>
+<span class="w">    </span><span class="n">unwordP</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">unwordP</span><span class="w"> </span><span class="p">(</span><span class="n">unwords</span><span class="w"> </span><span class="p">[</span><span class="n">xs</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">])</span>
+
+<span class="nf">unword</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">WordP</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">unword</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">unwordP</span><span class="w"> </span><span class="kt">[]</span>
+
+<span class="kr">class</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[</span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span><span class="p">]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="p">[</span><span class="n">a</span><span class="p">]</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">reverse</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="p">(</span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="kr">type</span><span class="w"> </span><span class="kt">LArg</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">listsP</span><span class="w"> </span><span class="n">xs</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">listsP</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="kt">:</span><span class="w"> </span><span class="n">xs</span><span class="p">)</span>
+
+<span class="nf">lists</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">ListP</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="nf">lists</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">listsP</span><span class="w"> </span><span class="kt">[]</span>
+</pre></div>
+
+<p>The above <code>add</code> function and <code>AddP</code> type class can be greatly improved. It currently only accepts arguments of type <code>Int</code>, while the only operator it makes use of, <code>(+)</code>, is defined over all instances of the <code>Num</code> type class. Ideally, we would like our function to also be defined over those same instances. Examples of what we would have liked to see are:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Int</span>
+<span class="mi">6</span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">add</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="mf">2.4</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Float</span>
+<span class="mf">6.4</span>
+</pre></div>
+
+<p>We can use the <code>Num</code> constraint in the type class definition and instance declarations to achieve this, in most cases this just means switching out the <code>Int</code>s with the constrained variable. We also add an extra type variable which will contain the information over which type we’re currently operating.</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>One problem is the instance we write for values. We can’t really write an instance for <code>(Num a, a ~ r) =&gt; Add a r</code>, because the <code>r</code> type variable is too generic and captures too much.</p>
+<p>One solution to this problem is the <em>OverlappingInstances</em> extension. This extension allows multiple instance definitions to be written where the applicable types overlap. In our case the <code>Add a r</code> instance would overlap with any other instance for <code>Add</code>, like <code>Add a (a -&gt; r)</code>.</p>
+<p>We can, in a limited capacity, annotate specific instances to be preferred over others. So in situations where both <code>Add a r</code> and <code>Add a (a -&gt; r)</code> matched, we would prefer that <code>Add a (a -&gt; r)</code> be picked. The resulting definitions are:</p>
+<div class="highlight"><pre><span></span><span class="kr">class</span><span class="w"> </span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="cm">{-# OVERLAPPABLE #-}</span><span class="w"> </span><span class="p">(</span><span class="kt">Num</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">id</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="cm">{-# OVERLAPPING #-}</span><span class="w"> </span><span class="p">(</span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">r</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="n">a&#39;</span><span class="p">)</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Add</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="p">(</span><span class="n">a&#39;</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">r</span>
+<span class="w">    </span><span class="n">addN</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">addN</span><span class="w"> </span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+
+<p>One big annoyance is the fact that we have to create a type class per polyvariadic function. Next time we’ll try and look at approaches to generalizing this process.</p>
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2019-07-06-roly-oly-polyvariadic.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Flooding my 'base</title>
+    <link>https://crtschin.com/posts/2019-02-15-flooding-my-base.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on February 15, 2019
+        
+    </section>
+    <section>
+        <p>While working on my most recent hobby project in Dart, I ran into the simple problem of having a database but no data. I didn’t really want to manually go filling tables, so I tried creating a library which could do this automatically. Note that this was done using the <code>Aqueduct</code> server framework in Dart but it can easily be ported to a different less feature-rich environment.</p>
+<h2 id="all-about-schemes">All about schemes</h2>
+<p>So I first had to figure out how I wanted the user to be able to specify how to fill any new objects. <code>Aqueduct</code> maintains instances of a <code>ManagedEntity</code> class which contains all of the structural data of a table. This was perfect for my needs and is also the first argument to the final <code>GenerationScheme</code> class. Its second argument is the field-function mapping to be used for the actual generation of data. This seemed the best solution instead of having the user be limited to, for example, some DSL which would then be converted to random strings <span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote">Using, for example, the <code>#</code> symbol for random numbers and <code>C</code> for random characters we could express Dutch postal codes as <code>####CC</code><br />
+<br />
+</span></span>.</p>
+<h2 id="ordering">Ordering</h2>
+<p>When generating data for a database, there are several approaches one could take. One possibility, would be to visualize objects as graphs, with the nodes are the individual rows. This would require generating instances of foreign key relationship satisfying graphs which you could then convert into queries. This way each connected component would have to be inserted, in the correct order, separately.</p>
+<p>One other approach, is where you visualize the entire database scheme as a graph and generate objects for tables one by one. This is also the one implemented, due to its relative simplicity.</p>
+<p>The order of the tables, which we will generate objects for, is the same as the topological sort of the graph where the nodes are the tables and the edges are the foreign key relationships. The topological sort namely represents the order of dependencies between the nodes, where the nodes containing no dependencies themselves are the first in the sorting. This is useful in knowing which objects can be easily created by themselves, requiring no reference to any other object. For the objects that do contain references, we can just insert references to already created objects considering every object can only be considered for creation if every of its depencies have already been created.</p>
+<p>This does assume that the database scheme contains no cyclic dependencies or self referencing tables. The approach described here was implemented in the Dart package <a href="https://pub.dartlang.org/packages/flood">flood</a> while working on a project where I needed a database containing data to be able to visualize any of the UI elements containing data.</p>
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2019-02-15-flooding-my-base.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Cat... amarphisms</title>
+    <link>https://crtschin.com/posts/2018-04-15-cat-amorphisms.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on April 15, 2018
+        
+    </section>
+    <section>
+        <p>One of the first higher-order functions most students encounter in a functional programming course is the fold (foldr, foldl). A fold takes an operator, an initial value and a list, and then recursively combines each element in the list using the initial value and the given operator.</p>
+<figure>
+<img src="../images/Right-fold-transformation-1-.png" alt="The recursive combining structure of a fold" />
+<figcaption aria-hidden="true">The recursive combining structure of a fold</figcaption>
+</figure>
+<h2 id="the-easy-stuff">The Easy Stuff</h2>
+<p>A catamorphism is a generalization of the fold on lists<span class="sidenote-wrapper"><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><span class="sidenote"><a href="https://www.schoolofhaskell.com/user/edwardk/recursion-schemes/catamorphisms">Kmett, E. (2014, 15 Apr) Catamorphisms. School of Haskell</a><br />
+<br />
+</span></span>. The word catamorphism has its roots in the Greek word ‘κατά’ meaning ‘downwards’<span class="sidenote-wrapper"><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><span class="sidenote">(HaskellWiki, Catamorphisms)[https://wiki.haskell.org/Catamorphisms]<br />
+<br />
+</span></span>. In this case it is the concept of applying a fold on any algebraic data type. An algebraic data type is any data type composed of other types – as an example, take the following data type for a binary tree I will use throughout this post.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Node</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+</pre></div>
+
+<p>The following two functions both take such a Tree and recursively combines it into an Int. The first function calculates the depth, and the second how many leaves are in the tree.</p>
+<div class="highlight"><pre><span></span><span class="nf">depth</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nf">depth</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="nf">depth</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="p">(</span><span class="n">depth</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">depth</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="nf">count</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="nf">count</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="nf">count</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">count</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>I think you can quickly see where I am going with this. These two functions both have the same structure, where for each constructor there is a function which takes some values and outputs something, sometimes recursively. Note the types of the functions used on the right-hand side of both depth and count.</p>
+<p>The type signature of the function used when handling an Empty is just an Int. For a Leaf a we implicitly get some type a, which is then thrown away, and give an Int so its type is (a -&gt; Int). The (+) in the case of the count function for a Node takes 2 parameters, both Ints. So, when trying to generalise count and depth we need some group of functions (Int, a -&gt; Int, Int -&gt; Int -&gt; Int) for the different cases. We can now define the generic function we will use to create depth and count.</p>
+<div class="highlight"><pre><span></span><span class="nf">foldTreeToInt</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="n">leaf</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fTreeToInt</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">empty</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">fTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">fTreeToInt</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fTreeToInt</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="c1">-- We can now easily define depth and count by specifying</span>
+<span class="c1">-- the group of functions</span>
+<span class="nf">depth&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">const</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nf">\</span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="nf">count&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">foldTreeToInt</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">const</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="o">+</span><span class="p">))</span>
+</pre></div>
+
+<p>The group of functions needed for the fold is called an F-algebra and maintains the structure of the underlying algebraic data type<span class="sidenote-wrapper"><label for="sn-2" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-2" class="margin-toggle"/><span class="sidenote">Jeuring, J., Swierstra, D. (2011) Languages And Compilers. Utrecht University<br />
+<br />
+</span></span>. We can generalise the fold we created to generic data types.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kt">TreeAlgebra</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+
+<span class="nf">foldTree</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">TreeAlgebra</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">t</span>
+<span class="nf">foldTree</span><span class="w"> </span><span class="p">(</span><span class="n">empty</span><span class="p">,</span><span class="w"> </span><span class="n">leaf</span><span class="p">,</span><span class="w"> </span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">fTree</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="kt">Empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">empty</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">leaf</span><span class="w"> </span><span class="n">a</span>
+<span class="w">    </span><span class="n">fTree</span><span class="w"> </span><span class="p">(</span><span class="kt">Node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">fTree</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">fTree</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+<p>When the constructors are used as the functions in the algebra, we get as output the same tree. This specific algebra is called the initial algebra and defines the identity function. The count and depth functions created using the algebra and fold are called compositional functions.</p>
+<h2 id="black-magic">Black magic</h2>
+<p>Catamorphism is a term from category theory, of which my knowledge is anything but formal (or correct). Best to hear it from someone who knows what they are talking <a href="http://chrislambda.github.io/blog/2014/01/30/catamorphisms-in-15-minutes/">about</a><span class="sidenote-wrapper"><label for="sn-3" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-3" class="margin-toggle"/><span class="sidenote"><a href="http://chrislambda.github.io/blog/2014/01/30/catamorphisms-in-15-minutes/">Jones, C (2014, 30 Jan) Catamorphisms in 15 Minutes!</a><br />
+<br />
+</span></span>.</p>
+<p>A F-algebra contains an endofunctor <code>f</code>, an object <code>a</code> and a morphism <code>f a -&gt; a</code><span class="sidenote-wrapper"><label for="sn-4" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-4" class="margin-toggle"/><span class="sidenote"><a href="https://bartoszmilewski.com/2014/10/28/category-theory-for-programmers-the-preface/">Milewski, B. (2014) Category Theory for Programmers</a><br />
+<br />
+</span></span>. A functor is a mapping between categories, where an endofunctor maps a category into itself. This can be written in haskell as type <code>Algebra f a = f a -&gt; a</code><span class="sidenote-wrapper"><label for="sn-5" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-5" class="margin-toggle"/><span class="sidenote"><a href="https://www.schoolofhaskell.com/user/bartosz/understanding-algebras">Milewski, B. (2013, 1 Oct) Understanding F-Algebras. School of Haskell</a><br />
+<br />
+</span></span>.</p>
+<p>We can use fixed points as our initial algebra. A fixed point here is when you can apply some functor f to itself and get the same type, possible in haskell as <code>newtype Fix f = Fix { unFix :: f (Fix f) }</code>. The code for writing generic catamorphisms can now be written as.</p>
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kt">Algebra</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">unFix</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="p">}</span>
+
+<span class="nf">cata</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Functor</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=&gt;</span><span class="w"> </span><span class="kt">Algebra</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">cata</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="p">(</span><span class="n">cata</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="n">unFix</span>
+</pre></div>
+
+<p>We can use cata to define count and depth after setting up the Functor instance of our <code>Tree</code> and the initial algebra. We also have to remove the explicit recursion from our <code>Tree</code> definition.</p>
+<div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree&#39;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty&#39;</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Node&#39;</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="n">b</span>
+
+<span class="kr">instance</span><span class="w"> </span><span class="kt">Functor</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree&#39;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="kt">Empty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty&#39;</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="n">fmap</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="p">(</span><span class="kt">Node&#39;</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Node&#39;</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">l</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+
+<span class="kr">type</span><span class="w"> </span><span class="kt">FTree&#39;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Tree&#39;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+
+<span class="nf">count&#39;&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree&#39;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">count&#39;&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">cata</span><span class="w"> </span><span class="n">phi</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="kt">Empty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Node&#39;</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r</span>
+
+<span class="nf">depth&#39;&#39;</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree&#39;</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">depth&#39;&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">cata</span><span class="w"> </span><span class="n">phi</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="kt">Empty&#39;</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="n">phi</span><span class="w"> </span><span class="p">(</span><span class="kt">Node&#39;</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">max</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span>
+</pre></div>
+
+<p>The functions <code>count''</code> and <code>depth''</code> on the following example tree would evaluate to 3 and 4 respectively.</p>
+<div class="highlight"><pre><span></span><span class="c1">--  /\</span>
+<span class="c1">-- 3 /\</span>
+<span class="c1">--  1  \</span>
+<span class="c1">--      2</span>
+<span class="nf">example</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FTree&#39;</span><span class="w"> </span><span class="kt">Int</span>
+<span class="nf">example</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="w"> </span><span class="n">empty</span><span class="w"> </span><span class="p">(</span><span class="n">leaf</span><span class="w"> </span><span class="mi">2</span><span class="p">)))</span>
+<span class="w">  </span><span class="kr">where</span>
+<span class="w">    </span><span class="n">empty</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="kt">Empty&#39;</span>
+<span class="w">    </span><span class="n">leaf</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Leaf&#39;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span>
+<span class="w">    </span><span class="n">node</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Fix</span><span class="w"> </span><span class="p">(</span><span class="kt">Node&#39;</span><span class="w"> </span><span class="n">l</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
+</pre></div>
+
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2018-04-15-cat-amorphisms.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Shuffle-athon</title>
+    <link>https://crtschin.com/posts/2017-11-10-shuffle-athon.html</link>
+    <description><![CDATA[<article>
+    <section class="header">
+        Posted on November 10, 2017
+        
+    </section>
+    <section>
+        <p>A modest problem was posed the other day.</p>
+<p>A pair of my fellow undergrads were presenting their paper on estimating disease survivability in moving populations using Monte Carlo. It was a short course, so the research and presentations were kept relatively simple. They setup their populations as a one-dimensional arrays and simulated people moving around by iterating through the array and based on a probability, removed people and inserted them in different positions. The order of the people who didn’t move didn’t change, so they had to shift every person after the insertion spot one index over.</p>
+<p>This is reminiscent of the insertion step in <a href="https://en.wikipedia.org/wiki/Insertion_sort">insertion sort</a> with the elements being incomparable, which has a time complexity of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>. The lecturer tasked with grading our presentations quickly saw that their shuffling method would be a bottleneck when doing simulations and questioned the efficiency of their approach.</p>
+<figure>
+<img src="../images/examplesoep.gif" alt="Illustration of their shuffling strategy" />
+<figcaption aria-hidden="true">Illustration of their shuffling strategy</figcaption>
+</figure>
+<p>This situation requires fast insertions and deletions, where the relative order of elements not involved with the insertion or deletion don’t change. This is exactly what a <a href="https://en.wikipedia.org/wiki/Linked_list">linked list</a> can give us. A linked list’s drawback, the inefficient indexing, matters little here. The only time indexing would be useful is when picking the people who should move and where they should move to, but this can be done in a constant number of passes. A possibly useful algorithm which we can use is <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a>. Reservoir sampling allows you to pick random elements from an array in a single pass where each element has an equal chance of being picked.</p>
+<p>I’ve posted a code snippet below implementing a minimal doubly linked list using reservoir sampling for population movement in <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span> time complexity.</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">math</span>
+
+
+<span class="k">class</span> <span class="nc">LLNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">next_node</span><span class="p">:</span> \<span class="s2">&quot;LLNode</span><span class="se">\&quot;</span><span class="s2"> = None,</span>
+        <span class="n">prev_node</span><span class="p">:</span> \<span class="s2">&quot;LLNode</span><span class="se">\&quot;</span><span class="s2"> = None):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_node</span> <span class="o">=</span> <span class="n">next_node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prev_node</span> <span class="o">=</span> <span class="n">prev_node</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">LinkedList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">LLNode</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tail</span> <span class="o">=</span> <span class="n">LLNode</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">prev_node</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">next_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">shuffle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">number_of_elements</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span>
+                <span class="n">random</span><span class="o">.</span><span class="n">normalvariate</span><span class="p">(</span><span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.1705</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">)))</span>
+        <span class="n">temp_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_sample</span><span class="p">(</span><span class="n">number_of_elements</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">temp_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__delete</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">temp_list</span><span class="p">)</span>
+        <span class="n">new_locations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_sample</span><span class="p">(</span><span class="n">number_of_elements</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">location</span> <span class="ow">in</span> <span class="n">new_locations</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__insert</span><span class="p">(</span><span class="n">temp_list</span><span class="o">.</span><span class="n">pop</span><span class="p">(),</span> <span class="n">location</span><span class="o">.</span><span class="n">prev_node</span><span class="p">,</span> <span class="n">location</span><span class="p">)</span>
+
+    <span class="c1"># Reservoir sampling with the possibility of the</span>
+    <span class="c1"># same element being chosen multiple times.</span>
+    <span class="c1"># This is done by iterating over the same element</span>
+    <span class="c1"># multiple times while still increasing the index</span>
+    <span class="k">def</span> <span class="nf">reservoir_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">allow_same_location</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">LLNode</span><span class="p">]:</span>
+        <span class="n">new_array</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_node</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span>
+        <span class="n">number_of_iterations</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">allow_same_location</span><span class="p">:</span>
+            <span class="n">number_of_iterations</span> <span class="o">=</span> <span class="n">sample_size</span>
+        <span class="k">while</span> <span class="n">current_node</span><span class="o">.</span><span class="n">next_node</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_array</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">sample_size</span><span class="p">:</span>
+                <span class="n">new_array</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">current_node</span><span class="o">.</span><span class="n">next_node</span><span class="p">]</span> <span class="o">*</span> <span class="n">number_of_iterations</span><span class="p">)</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="n">number_of_iterations</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">number_of_iterations</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">new_array</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_array</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="n">current_node</span><span class="o">.</span><span class="n">next_node</span>
+                        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">current_node</span> <span class="o">=</span> <span class="n">current_node</span><span class="o">.</span><span class="n">next_node</span>
+        <span class="k">return</span> <span class="n">new_array</span>
+
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_val</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="n">new_node</span> <span class="o">=</span> <span class="n">LLNode</span><span class="p">(</span><span class="n">new_val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__insert</span><span class="p">(</span><span class="n">new_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail</span><span class="o">.</span><span class="n">prev_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tail</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">LLNode</span><span class="p">]:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="o">.</span><span class="n">next_node</span>
+        <span class="k">while</span> <span class="n">current</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="n">current</span><span class="o">.</span><span class="n">next_node</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__insert</span><span class="p">(</span><span class="n">new_node</span><span class="p">,</span> <span class="n">prev_node</span><span class="p">:</span> <span class="n">LLNode</span><span class="p">,</span> <span class="n">next_node</span><span class="p">:</span> <span class="n">LLNode</span><span class="p">):</span>
+        <span class="n">new_node</span><span class="o">.</span><span class="n">next_node</span><span class="p">,</span> <span class="n">next_node</span><span class="o">.</span><span class="n">prev_node</span> <span class="o">=</span> <span class="n">next_node</span><span class="p">,</span> <span class="n">new_node</span>
+        <span class="n">new_node</span><span class="o">.</span><span class="n">prev_node</span><span class="p">,</span> <span class="n">prev_node</span><span class="o">.</span><span class="n">next_node</span> <span class="o">=</span> <span class="n">prev_node</span><span class="p">,</span> <span class="n">new_node</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__delete</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">LLNode</span><span class="p">):</span>
+        <span class="n">prev_node</span><span class="p">,</span> <span class="n">next_node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">prev_node</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">next_node</span>
+        <span class="n">prev_node</span><span class="o">.</span><span class="n">next_node</span><span class="p">,</span> <span class="n">next_node</span><span class="o">.</span><span class="n">prev_node</span> <span class="o">=</span> <span class="n">next_node</span><span class="p">,</span> <span class="n">prev_node</span>
+</pre></div>
+
+    </section>
+</article>
+]]></description>
+    <pubDate>true</pubDate>
+    <guid>https://crtschin.com/posts/2017-11-10-shuffle-athon.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+
+    </channel>
+</rss>

@@ -19,10 +19,10 @@
                 <a href="../">Non-Functional Ramblings</a>
             </div>
             <nav>
-                <a href="../">Home</a>
                 <a href="../about.html">About</a>
                 <a href="../static/resume.pdf">Resume</a>
                 <a href="../archive.html">Archive</a>
+                <a href="../atom.xml">Feed</a>
             </nav>
         </header>
 
@@ -48,7 +48,7 @@
 <span class="cm">{-# LANGUAGE TypeFamilies #-}</span>
 </pre></div>
 
-<h1 id="in-on-the-ground-floor">In On the Ground Floor</h1>
+<h2 id="in-on-the-ground-floor">In On the Ground Floor</h2>
 <p>The first one I’ll go over, are first-order representations, i.e. if you simply deeply embed everything. These representations require you to build much of the semantics of the lambda calculus yourself. Even within this, you can already vary quite a bit by using for example de bruijn indices instead of string variables, to avoid the problem of shadowing.</p>
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Expr</span>
 <span class="w">  </span><span class="ow">=</span><span class="w"> </span><span class="kt">Var</span><span class="w"> </span><span class="kt">Text</span>
@@ -126,7 +126,7 @@
 
 <p>Variables, abstractions and function application all follow from how we set up our environment. I used a <code>Map</code> to keep track of which variable names correspond to which values, so variable references reduce to a simple lookup. Function abstractions suspend the current computation, and monadic action containing the environment representing the body. And for function application, we have to ensure we insert the applied value to the bound name of the suspension, into the environment.</p>
 <p>The last few constructors are ones I add for this specific lambda calculus, filling it in can be left as an exercise to the reader. The only thing is that it uses a strict semantics, but it is otherwise non-noteworthy.</p>
-<h1 id="from-the-ground-up">From the Ground Up</h1>
+<h2 id="from-the-ground-up">From the Ground Up</h2>
 <p>By keeping a flat first order representation of our language, I had to build much of the operational machinery alongside it in the interpreter. But we can avoid that if we “loan” some functionality from the underlying programming language we’re writing it in. This is where it becomes quite difficult to keep the recursion scheme approach, so let’s ditch that for a second. Instead, we’ll make it so our language is typed, i.e. it will be impossible to represent incorrectly typed terms.</p>
 <p>We first define our type system, which consists of real values, and function types. Using GADT syntax we can then indicate what the type is of each (sub-)expression while we define it.</p>
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Ty</span><span class="w"> </span><span class="kr">where</span>
