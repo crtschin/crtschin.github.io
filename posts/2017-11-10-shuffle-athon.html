@@ -5,44 +5,48 @@
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>(Non-)Functional Ramblings - Shuffle-athon</title>
-        <link rel="stylesheet" href="../css/default.css" />
+        <link rel="stylesheet" href="../css/main.css" />
         <link rel="stylesheet" href="../css/pygments.css" />
+        <link rel="stylesheet" href="../css/katex.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css" crossorigin="anonymous">
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
     </head>
     <body>
         <header>
-            <div class="logo">
-                <a href="../">Non-Functional Ramblings</a>
-            </div>
             <nav>
-                <a href="../about.html">About</a>
-                <a href="../static/resume.pdf">Resume</a>
-                <a href="../archive.html">Archive</a>
-                <a href="../atom.xml">Feed</a>
+                <a class="logo" href="../">Non-Functional Ramblings</a>
+                <div class="navigation">
+                    <a href="../about.html">About</a>
+                    <a href="../static/resume.pdf">Resume</a>
+                    <a href="../archive.html">Archive</a>
+                    <a href="../atom.xml">Feed</a>
+                </div>
             </nav>
         </header>
 
         <main role="main">
-            <h1>Shuffle-athon</h1>
+            <h1 class="title">Shuffle-athon</h1>
             <article>
     <section class="header">
         Posted on November 10, 2017
         
     </section>
     <section>
-        <p>A modest problem was posed the other day.</p>
-<p>A pair of my fellow undergrads were presenting their paper on estimating disease survivability in moving populations using Monte Carlo. It was a short course, so the research and presentations were kept relatively simple. They setup their populations as a one-dimensional arrays and simulated people moving around by iterating through the array and based on a probability, removed people and inserted them in different positions. The order of the people who didn’t move didn’t change, so they had to shift every person after the insertion spot one index over.</p>
-<p>This is reminiscent of the insertion step in <a href="https://en.wikipedia.org/wiki/Insertion_sort">insertion sort</a> with the elements being incomparable, which has a time complexity of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>. The lecturer tasked with grading our presentations quickly saw that their shuffling method would be a bottleneck when doing simulations and questioned the efficiency of their approach.</p>
+        A modest problem was posed the other day.
+<p></p>
+A pair of my fellow undergrads were presenting their paper on estimating disease survivability in moving populations using Monte Carlo. It was a short course, so the research and presentations were kept relatively simple. They setup their populations as a one-dimensional arrays and simulated people moving around by iterating through the array and based on a probability, removed people and inserted them in different positions. The order of the people who didn’t move didn’t change, so they had to shift every person after the insertion spot one index over.
+<p></p>
+This is reminiscent of the insertion step in <a href="https://en.wikipedia.org/wiki/Insertion_sort">insertion sort</a> with the elements being incomparable, which has a time complexity of <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span>. The lecturer tasked with grading our presentations quickly saw that their shuffling method would be a bottleneck when doing simulations and questioned the efficiency of their approach.
 <figure>
 <img src="../images/examplesoep.gif" alt="Illustration of their shuffling strategy" />
 <figcaption aria-hidden="true">Illustration of their shuffling strategy</figcaption>
 </figure>
-<p>This situation requires fast insertions and deletions, where the relative order of elements not involved with the insertion or deletion don’t change. This is exactly what a <a href="https://en.wikipedia.org/wiki/Linked_list">linked list</a> can give us. A linked list’s drawback, the inefficient indexing, matters little here. The only time indexing would be useful is when picking the people who should move and where they should move to, but this can be done in a constant number of passes. A possibly useful algorithm which we can use is <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a>. Reservoir sampling allows you to pick random elements from an array in a single pass where each element has an equal chance of being picked.</p>
-<p>I’ve posted a code snippet below implementing a minimal doubly linked list using reservoir sampling for population movement in <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span> time complexity.</p>
+<p></p>
+This situation requires fast insertions and deletions, where the relative order of elements not involved with the insertion or deletion don’t change. This is exactly what a <a href="https://en.wikipedia.org/wiki/Linked_list">linked list</a> can give us. A linked list’s drawback, the inefficient indexing, matters little here. The only time indexing would be useful is when picking the people who should move and where they should move to, but this can be done in a constant number of passes. A possibly useful algorithm which we can use is <a href="https://en.wikipedia.org/wiki/Reservoir_sampling">reservoir sampling</a>. Reservoir sampling allows you to pick random elements from an array in a single pass where each element has an equal chance of being picked.
+<p></p>
+I’ve posted a code snippet below implementing a minimal doubly linked list using reservoir sampling for population movement in <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">O(n)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal">n</span><span class="mclose">)</span></span></span></span> time complexity.
 <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 <span class="kn">import</span> <span class="nn">random</span>
 <span class="kn">import</span> <span class="nn">math</span>

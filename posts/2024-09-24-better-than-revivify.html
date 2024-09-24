@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>(Non-)Functional Ramblings - Better than Revivify</title>
+        <link rel="stylesheet" href="../css/main.css" />
+        <link rel="stylesheet" href="../css/pygments.css" />
+        <link rel="stylesheet" href="../css/katex.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <nav>
+                <a class="logo" href="../">Non-Functional Ramblings</a>
+                <div class="navigation">
+                    <a href="../about.html">About</a>
+                    <a href="../static/resume.pdf">Resume</a>
+                    <a href="../archive.html">Archive</a>
+                    <a href="../atom.xml">Feed</a>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1 class="title">Better than Revivify</h1>
+            <article>
+    <section class="header">
+        Posted on September 24, 2024
+        
+    </section>
+    <section>
+        I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href="./2020-09-18-roly-oly-polyvariadic-boogaloo.md">2020</a>, prior to me even graduating university.
+<h2 id="update">Update?</h2>
+<p></p>
+I have some free time right now and I’ve had some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well, I wasn’t very good with automated updates, nor had I touched my blog, then built with <a href="https://ghost.org/"><code>ghost</code></a>. Even worse, I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.
+<p></p>
+I tried for a bit, but after some hair pulling, I thought: “Why not just recreate this trash completely?”. I wasn’t too happy with <code>ghost</code> anyway, it was way too overkill for my purposes, I didn’t need subscribers or mailing lists. Just a static site with some words on it, perhaps with some styling and some files I could host.
+<h2 id="but-what-if-i-didnt">But What if I Didn’t?</h2>
+<p></p>
+In comes Github pages, a free way to host static websites! I’ve wanted to try using Github pages for quite a while, and I’m already quite familiar with Github, having to use it for work.
+<p></p>
+To use Github pages, I’d need a static site generator. The typical choice here is <a href="https://jekyllrb.com/">Jekyll</a>, even being recommend on the pages site on <a href="https://pages.github.com/">Github pages</a>. I’ve chosen a Haskell alternative called <a href="https://jaspervdj.be/hakyll/">Hakyll</a>, for the simple reason that I like to use Haskell. Getting it up and running was quite simple enough; the Hakyll tutorial ends with a nice working blog website with a few placeholder posts. My next step was to translate the <code>ghost</code><!--
+--><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote"><a href="https://web.archive.org/web/20240817152043/https://crtschin.com/">Here’s an archive</a> I could find of my website. I broke everything attempting to update my VPS, so getting a production example wasn’t exactly possible.</div><!--
+--> content I’d backed up, to the markdown files Hakyll builds into html using pandoc.
+<p></p>
+Next was getting everything exactly as I liked it. Here’s a some few things I changed or added, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll.
+<h3 id="styling">Styling</h3>
+<p></p>
+After clunking around in CSS for a bit trying to get a consistent color scheme based on gruvbox, this very <a href="https://jaspervdj.be/hakyll/tutorials/using-clay-with-hakyll.html">short post</a> gave me the idea to use <a href="http://fvisser.nl/clay/">Clay</a> for my styling instead. I didn’t know Clay existed prior, but I definitely liked the idea of using Haskell for everything.
+<p></p>
+Unfortunately the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which I didn’t really like. So instead, I run the script as an executable via cabal, and that seems to work out great. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
+<div class="highlight"><pre><span></span><span class="nf">main</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">hakyll</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">    </span><span class="o">...</span>
+<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">compile</span><span class="w"> </span><span class="n">getResourceBody</span>
+<span class="w">    </span><span class="n">clayDependencies</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">makePatternDependency</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span>
+<span class="w">    </span><span class="n">rulesExtraDependencies</span><span class="w"> </span><span class="p">[</span><span class="n">clayDependencies</span><span class="p">]</span><span class="w"> </span><span class="o">$</span>
+<span class="w">        </span><span class="n">create</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;css/main.css&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
+<span class="w">            </span><span class="n">route</span><span class="w"> </span><span class="n">idRoute</span>
+<span class="w">            </span><span class="n">compile</span><span class="w"> </span><span class="n">createCssUsingCabal</span>
+</pre></div>
+
+<h3 id="syntax-highlighting-latex">Syntax highlighting &amp; Latex</h3>
+<p></p>
+Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. Not much to note here, I’m not too big of a fan of including <code>.css</code> manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
+<p></p>
+Similarly, I was able to follow <a href="https://tony-zorman.com/posts/katex-with-hakyll.html">this post</a> to use <a href="https://katex.org/">KaTeX</a>.
+<h3 id="sidenotes">Sidenotes</h3>
+<p></p>
+I like to use side notes quite a bit instead of footnotes, as I find it often detracts from the point if the reader is compelled to jump to a different section of the page. For sidenotes, there already exists <a href="https://hackage.haskell.org/package/pandoc-sidenote">a package</a> I could reuse after flipping the <a href="https://github.com/jez/pandoc-sidenote/pull/26">html-sidenotes</a> flag that isn’t on hackage yet.
+<p></p>
+Using nix, I just override the <code>pandoc-sidenotes</code> version in the overlay that’s used while creating my shell, and it’ll automatically be installed in the shell-provided <code>ghc</code>.
+<div class="highlight"><pre><span></span>makeHaskellOverlay <span class="p">(</span>prev<span class="p">:</span> hfinal<span class="p">:</span> hprev<span class="p">:</span>
+  <span class="p">{</span>
+    <span class="ss">pandoc-sidenote</span> <span class="o">=</span> hprev<span class="o">.</span>callCabal2nixWithOptions <span class="s2">&quot;pandoc-sidenote&quot;</span>
+      <span class="p">(</span><span class="nb">builtins</span><span class="o">.</span>fetchGit <span class="p">{</span>
+        <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/jez/pandoc-sidenote&quot;</span><span class="p">;</span>
+        <span class="ss">rev</span> <span class="o">=</span> <span class="s2">&quot;&lt;insert hash here&gt;&quot;</span><span class="p">;</span>
+      <span class="p">})</span>
+      <span class="s2">&quot;-f html-sidenotes&quot;</span>
+      <span class="p">{};</span>
+  <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+
+<h3 id="deployment">Deployment</h3>
+<p></p>
+I was able to riff off of <a href="https://vllmrt.net/spam/hakyll-github-actions-pages.html">this blog post</a> to deploy my blog, which is located in a private repository, to my <a href="https://github.com/crtschin/crtschin.github.io">public pages repo</a>. I changed it to support a minimal build environment via nix as that’s what I use to maintain dependencies. I tried to optimize the Github Action time a bit by including <a href="https://github.com/nix-community/cache-nix-action">nix caching</a>, but also garbage collecting the nix store to keep the caches up to date, and creating a separate build profile from the default shell I use to write this blog.
+<div class="highlight"><pre><span></span><span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">build-deploy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">nix develop .#minimal -c cabal update</span>
+<span class="w">          </span><span class="no">nix develop .#minimal -c cabal build --only-dependencies site</span>
+<span class="w">          </span><span class="no">nix develop .#minimal -c cabal build site</span>
+<span class="w">          </span><span class="no">nix develop .#minimal -c cabal exec site build</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">          </span><span class="no">nix develop .#minimal --profile /tmp/build-profile</span>
+<span class="w">          </span><span class="no">nix-store --gc --print-roots</span>
+</pre></div>
+
+<h3 id="misc">Misc</h3>
+<p></p>
+There’re some more nice blogposts I used to add several niceties.
+<ul>
+<li>Drafts: I found <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> on being able to include drafts in Hakyll.</li>
+<li>Feeds: I added both RSS and Atom feeds following <a href="https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html">Robert Pearce’s example</a>.</li>
+<li>Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog. I didn’t follow any instruction on doing this, but improvising it was simple enough.</li>
+</ul>
+<p></p>
+All-in-all, this was quite fun. Hakyll is very nice to work with. It’s understandably peculiar when building things that have dependencies, such as using <code>rulesExtraDependencies</code> to handle dependencies of files that are created via <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Compiler.html#v:unsafeCompiler">IO</a>. But getting it all into, what I think is, a nice result was pretty easy and painless.
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>
