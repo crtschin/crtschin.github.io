@@ -185,6 +185,20 @@ Using nix, I just override the <code>pandoc-sidenotes</code> version in the over
 <span class="p">)</span>
 </pre></div>
 
+<h3 id="fonts">Fonts</h3>
+<p></p>
+I’m using Montserrat for regular ol’ text and Fira Code for typesetting code. I could just use Google’s CDN to host these fonts, but that’s no fun and implies any visitor getting unnecessarily tracked. But if I’m self-hosting, I may as well go all out and do some font optimization.
+<p></p>
+I downloaded the variable font <code>.ttf</code> files from <a href="fonts.google.com">Google</a>, and used <a href="https://github.com/vintagedave/Fontimize">fontimize</a> to load in the html documents and optimize each variable font file individually. I didn’t do this for the <code>KaTeX</code> font files though, as they were already quite small. This implies wrangling my nix environment a bit and writing a python script, invoking it via <code>unsafeCompiler</code>.
+<div class="highlight"><pre><span></span><span class="c1"># Optimizing is as simple as calling a single function.</span>
+<span class="n">optimise_fonts_for_html_contents</span><span class="p">(</span>
+    <span class="n">html_contents</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">html</span> <span class="ow">in</span> <span class="n">html_files</span><span class="p">],</span>
+    <span class="n">fonts</span><span class="o">=</span><span class="n">font_file_paths</span><span class="p">,</span>
+    <span class="n">subsetname</span><span class="o">=</span><span class="s2">&quot;subset&quot;</span><span class="p">,</span>
+    <span class="n">print_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+
 <h3 id="deployment">Deployment</h3>
 <p></p>
 I was able to riff off of <a href="https://vllmrt.net/spam/hakyll-github-actions-pages.html">this blog post</a> to deploy my blog, which is located in a private repository, to my <a href="https://github.com/crtschin/crtschin.github.io">public pages repo</a>. I changed it to support a minimal build environment via nix as that’s what I use to maintain dependencies. I tried to optimize the Github Action time a bit by including <a href="https://github.com/nix-community/cache-nix-action">nix caching</a>, but also garbage collecting the nix store to keep the caches up to date, and creating a separate build profile from the default shell I use to write this blog.
@@ -815,8 +829,8 @@ I’ve posted a code snippet below implementing a minimal doubly linked list usi
 
 
 <span class="k">class</span> <span class="nc">LLNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">next_node</span><span class="p">:</span> \<span class="s2">&quot;LLNode</span><span class="se">\&quot;</span><span class="s2"> = None,</span>
-        <span class="n">prev_node</span><span class="p">:</span> \<span class="s2">&quot;LLNode</span><span class="se">\&quot;</span><span class="s2"> = None):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">next_node</span><span class="p">:</span> <span class="s2">&quot;LLNode&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prev_node</span><span class="p">:</span> <span class="s2">&quot;LLNode&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">next_node</span> <span class="o">=</span> <span class="n">next_node</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prev_node</span> <span class="o">=</span> <span class="n">prev_node</span>
