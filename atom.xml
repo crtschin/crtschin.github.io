@@ -146,12 +146,12 @@ To use Github pages, I’d need a static site generator. The typical choice here
 --><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><div class="sidenote"><a href="https://web.archive.org/web/20240817152043/https://crtschin.com/">Here’s an archive</a> I could find of my website. I broke everything attempting to update my VPS, so getting a production example wasn’t exactly possible.</div><!--
 --> content I’d backed up, to the markdown files Hakyll builds into html using pandoc.
 <p></p>
-Next was getting everything exactly as I liked it. Here’s a some few things I changed or added, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll.
+After that tedium came the fun part, getting everything exactly as I liked it. Here’s a few things I changed or added, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll. As always, I’m standing on the shoulders of giants.
 <h3 id="styling">Styling</h3>
 <p></p>
 After clunking around in CSS for a bit trying to get a consistent color scheme based on gruvbox, this very <a href="https://jaspervdj.be/hakyll/tutorials/using-clay-with-hakyll.html">short post</a> gave me the idea to use <a href="http://fvisser.nl/clay/">Clay</a> for my styling instead. I didn’t know Clay existed prior, but I definitely liked the idea of using Haskell for everything.
 <p></p>
-Unfortunately the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which I didn’t really like. So instead, I run the script as an executable via cabal, and that seems to work out great. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
+Unfortunately, the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which I don’t really like. So instead, I run the script as an executable via cabal. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
 <div class="highlight"><pre><span></span><span class="nf">main</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">hakyll</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
 <span class="w">    </span><span class="o">...</span>
 <span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">compile</span><span class="w"> </span><span class="n">getResourceBody</span>
@@ -187,7 +187,7 @@ Using nix, I just override the <code>pandoc-sidenotes</code> version in the over
 
 <h3 id="fonts">Fonts</h3>
 <p></p>
-I’m using Montserrat for regular ol’ text and Fira Code for typesetting code. I could just use Google’s CDN to host these fonts, but that’s no fun and implies any visitor getting unnecessarily tracked. But if I’m self-hosting, I may as well go all out and do some font optimization.
+I’m using <a href="https://en.wikipedia.org/wiki/Montserrat_(typeface)">Montserrat</a> for regular ol’ text and <a href="https://github.com/tonsky/FiraCode">Fira Code</a> for typesetting code. I could just use Google’s CDN to host these fonts, but that’s no fun and implies any visitor getting unnecessarily tracked by big boi G. But if I’m self-hosting, I may as well go all out and do some font optimization.
 <p></p>
 I downloaded the variable font <code>.ttf</code> files from <a href="fonts.google.com">Google</a>, and used <a href="https://github.com/vintagedave/Fontimize">fontimize</a> to load in the html documents and optimize each variable font file individually. I didn’t do this for the <code>KaTeX</code> font files though, as they were already quite small. This implies wrangling my nix environment a bit and writing a python script, invoking it via <code>unsafeCompiler</code>.
 <div class="highlight"><pre><span></span><span class="c1"># Optimizing is as simple as calling a single function.</span>
@@ -199,6 +199,8 @@ I downloaded the variable font <code>.ttf</code> files from <a href="fonts.googl
 <span class="p">)</span>
 </pre></div>
 
+<p></p>
+This makes my fonts dependent on the content of my blog, resizing to fit whatever nonsense I write down. Nifty!
 <h3 id="deployment">Deployment</h3>
 <p></p>
 I was able to riff off of <a href="https://vllmrt.net/spam/hakyll-github-actions-pages.html">this blog post</a> to deploy my blog, which is located in a private repository, to my <a href="https://github.com/crtschin/crtschin.github.io">public pages repo</a>. I changed it to support a minimal build environment via nix as that’s what I use to maintain dependencies. I tried to optimize the Github Action time a bit by including <a href="https://github.com/nix-community/cache-nix-action">nix caching</a>, but also garbage collecting the nix store to keep the caches up to date, and creating a separate build profile from the default shell I use to write this blog.
