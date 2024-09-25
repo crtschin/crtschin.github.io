@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>(Non-)Functional Ramblings - Roly, Oly, ..., Polyvariadic Boogaloo</title>
+        <title>(Non-)Functional Ramblings - Roly, Oly, …, Polyvariadic Boogaloo</title>
         <link rel="stylesheet" href="../css/main.css" />
         <link rel="stylesheet" href="../css/pygments.css" />
         <link rel="stylesheet" href="../css/katex.css">
@@ -13,7 +13,7 @@
     </head>
     <body>
         <header>
-            <nav>
+            <nav class="header">
                 <a class="logo" href="../">Non-Functional Ramblings</a>
                 <div class="navigation">
                     <a href="../about.html">About</a>
@@ -25,14 +25,15 @@
         </header>
 
         <main role="main">
-            <h1 class="title">Roly, Oly, ..., Polyvariadic Boogaloo</h1>
+            <h1 class="title">Roly, Oly, …, Polyvariadic Boogaloo</h1>
             <article>
-    <section class="header">
+    <section class="publish-date">
         Posted on September 18, 2020
         
     </section>
     <section>
-        I started this post not long after <a href="../roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.
+        <p></p>
+I started this post not long after <a href="../roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.
 <p></p>
 In the previous post about polyvariadic functions, we gave some examples of how to define them in haskell using typeclass trickery. The final definitions were, however, very repetitive, as we had to define a typeclass for each of the functions. Our handy list of our ghc-specific language extensions.
 <div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DefaultSignatures #-}</span>

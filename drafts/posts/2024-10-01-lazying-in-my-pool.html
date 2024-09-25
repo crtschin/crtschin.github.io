@@ -13,7 +13,7 @@
     </head>
     <body>
         <header>
-            <nav>
+            <nav class="header">
                 <a class="logo" href="../../">Non-Functional Ramblings</a>
                 <div class="navigation">
                     <a href="../../about.html">About</a>
@@ -27,12 +27,13 @@
         <main role="main">
             <h1 class="title">Lazy-ing in My Pool</h1>
             <article>
-    <section class="header">
+    <section class="publish-date">
         Posted on October  1, 2024
         
     </section>
     <section>
-        I encountered an interesting problem recently, where I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand, to avoid paying the price of initializing the entire pool when I might only need to do a singular action using one resource.
+        <p></p>
+I encountered an interesting problem recently, where I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand, to avoid paying the price of initializing the entire pool when I might only need to do a singular action using one resource.
 <p></p>
 Imagine some usecase where we might have a pool of files we need to read over the network and some work we intend to do on each file contents. This <code>FileHandle</code> is the resource we’ll manually manage.
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>

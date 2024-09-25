@@ -12,12 +12,28 @@
     <title>Better than Revivify</title>
     <link>https://crtschin.com/posts/2024-09-24-better-than-revivify.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on September 24, 2024
         
     </section>
     <section>
-        I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href="./2020-09-18-roly-oly-polyvariadic-boogaloo.md">2020</a>, prior to me even graduating university.
+        
+<nav class="toc"><div class="toc-header">Contents</div>
+<ul>
+<li><a href="#update" id="toc-update">Update?</a></li>
+<li><a href="#but-what-if-i-didnt" id="toc-but-what-if-i-didnt">But What if I Didn’t?</a>
+<ul>
+<li><a href="#styling" id="toc-styling">Styling</a></li>
+<li><a href="#syntax-latex" id="toc-syntax-latex">Syntax &amp; Latex</a></li>
+<li><a href="#sidenotes" id="toc-sidenotes">Sidenotes</a></li>
+<li><a href="#fonts" id="toc-fonts">Fonts</a></li>
+<li><a href="#deployment" id="toc-deployment">Deployment</a></li>
+<li><a href="#misc" id="toc-misc">Misc</a></li>
+</ul></li>
+</ul>
+</nav>
+<p></p>
+I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href="./2020-09-18-roly-oly-polyvariadic-boogaloo.md">2020</a>, prior to me even graduating university.
 <h2 id="update">Update?</h2>
 <p></p>
 I have some free time right now and I’ve had some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well, I wasn’t very good with automated updates, nor had I touched my blog, then built with <a href="https://ghost.org/"><code>ghost</code></a>. Even worse, I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.
@@ -47,7 +63,7 @@ Unfortunately, the way described in the blogpost limits it to <a href="https://g
 <span class="w">            </span><span class="n">compile</span><span class="w"> </span><span class="n">createCssUsingCabal</span>
 </pre></div>
 
-<h3 id="syntax-highlighting-latex">Syntax highlighting &amp; Latex</h3>
+<h3 id="syntax-latex">Syntax &amp; Latex</h3>
 <p></p>
 Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. Not much to note here, I’m not too big of a fan of including <code>.css</code> manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
 <p></p>
@@ -123,12 +139,13 @@ All-in-all, this was quite fun. Hakyll is very nice to work with. It’s underst
     <title>What’s in the Name?</title>
     <link>https://crtschin.com/posts/2024-09-20-all-about-representations.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on September 20, 2024
         
     </section>
     <section>
-        As when doing anything with a dependent language, the biggest part of my Master’s thesis was about finding the correct way to phrase things<!--
+        <p></p>
+As when doing anything with a dependent language, the biggest part of my Master’s thesis was about finding the correct way to phrase things<!--
 --><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle"/><div class="sidenote">As a quick summary, my thesis was to give a automated proof of correctness of forward-mode AD in Coq.</div><!--
 -->. I learned that there are quite a few ways to phrase a lambda calculus within a functional language. I’ll go over a few of them, each time writing a catamorphic interpreter<!--
 --><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle"/><div class="sidenote">The recursion-scheme interpreter approach will be almost identical to Michael Peyton Jones’ in <a href="https://www.michaelpj.com/blog/2018/04/08/catamorphic-lc-interpreter.html">this</a> blog post.</div><!--
@@ -280,15 +297,16 @@ I’ll leave it here for now. Turning data into functions or functions into data
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 <item>
-    <title>Roly, Oly, ..., Polyvariadic Boogaloo</title>
+    <title>Roly, Oly, …, Polyvariadic Boogaloo</title>
     <link>https://crtschin.com/posts/2020-09-18-roly-oly-polyvariadic-boogaloo.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on September 18, 2020
         
     </section>
     <section>
-        I started this post not long after <a href="/roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.
+        <p></p>
+I started this post not long after <a href="/roly-oly-poly/">its predecessor</a>, but ended up forgetting about it.
 <p></p>
 In the previous post about polyvariadic functions, we gave some examples of how to define them in haskell using typeclass trickery. The final definitions were, however, very repetitive, as we had to define a typeclass for each of the functions. Our handy list of our ghc-specific language extensions.
 <div class="highlight"><pre><span></span><span class="cm">{-# LANGUAGE DefaultSignatures #-}</span>
@@ -379,15 +397,16 @@ Now we can straightforwardly define polyvariadic variants of common list functio
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 <item>
-    <title>Roly, Oly, ..., Polyvariadic</title>
+    <title>Roly, Oly, …, Polyvariadic</title>
     <link>https://crtschin.com/posts/2019-07-06-roly-oly-polyvariadic.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on July  6, 2019
         
     </section>
     <section>
-        During my undergraduates, I followed a course called <em>Functional Programming</em>. That course mainly dealt with getting your feet wet with Haskell and some light fp theory. At that point, most students followed the course on imperative programming just half a year ago and then get blasted with the whole higher order functions deal. I definitely doubt I understood what monads were at the end of it.
+        <p></p>
+During my undergraduates, I followed a course called <em>Functional Programming</em>. That course mainly dealt with getting your feet wet with Haskell and some light fp theory. At that point, most students followed the course on imperative programming just half a year ago and then get blasted with the whole higher order functions deal. I definitely doubt I understood what monads were at the end of it.
 <p></p>
 Now during my master’s studies, I followed a course on “Advanced Functional Programming”. One of the topics that came up during the explanation of monad transformers were functional dependencies and type families – these looked a lot like magic.
 <p></p>
@@ -514,15 +533,16 @@ One big annoyance is the fact that we have to create a type class per polyvariad
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 <item>
-    <title>Flooding my 'base</title>
+    <title>Flooding my ’base</title>
     <link>https://crtschin.com/posts/2019-02-15-flooding-my-base.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on February 15, 2019
         
     </section>
     <section>
-        While working on my most recent hobby project in Dart, I ran into the simple problem of having a database but no data. I didn’t really want to manually go filling tables, so I tried creating a library which could do this automatically. Note that this was done using the <code>Aqueduct</code> server framework in Dart but it can easily be ported to a different less feature-rich environment.
+        <p></p>
+While working on my most recent hobby project in Dart, I ran into the simple problem of having a database but no data. I didn’t really want to manually go filling tables, so I tried creating a library which could do this automatically. Note that this was done using the <code>Aqueduct</code> server framework in Dart but it can easily be ported to a different less feature-rich environment.
 <h2 id="all-about-schemes">All about schemes</h2>
 <p></p>
 So I first had to figure out how I wanted the user to be able to specify how to fill any new objects. <code>Aqueduct</code> maintains instances of a <code>ManagedEntity</code> class which contains all of the structural data of a table. This was perfect for my needs and is also the first argument to the final <code>GenerationScheme</code> class. Its second argument is the field-function mapping to be used for the actual generation of data. This seemed the best solution instead of having the user be limited to, for example, some DSL which would then be converted to random strings <!--
@@ -545,15 +565,16 @@ This does assume that the database scheme contains no cyclic dependencies or sel
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 <item>
-    <title>Cat... amarphisms</title>
+    <title>Cat… amarphisms</title>
     <link>https://crtschin.com/posts/2018-04-15-cat-amorphisms.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on April 15, 2018
         
     </section>
     <section>
-        One of the first higher-order functions most students encounter in a functional programming course is the fold (foldr, foldl). A fold takes an operator, an initial value and a list, and then recursively combines each element in the list using the initial value and the given operator.
+        <p></p>
+One of the first higher-order functions most students encounter in a functional programming course is the fold (foldr, foldl). A fold takes an operator, an initial value and a list, and then recursively combines each element in the list using the initial value and the given operator.
 <figure>
 <img src="../images/Right-fold-transformation-1-.png" alt="The recursive combining structure of a fold" />
 <figcaption aria-hidden="true">The recursive combining structure of a fold</figcaption>
@@ -692,12 +713,13 @@ The functions <code>count''</code> and <code>depth''</code> on the following exa
     <title>Shuffle-athon</title>
     <link>https://crtschin.com/posts/2017-11-10-shuffle-athon.html</link>
     <description><![CDATA[<article>
-    <section class="header">
+    <section class="publish-date">
         Posted on November 10, 2017
         
     </section>
     <section>
-        A modest problem was posed the other day.
+        <p></p>
+A modest problem was posed the other day.
 <p></p>
 A pair of my fellow undergrads were presenting their paper on estimating disease survivability in moving populations using Monte Carlo. It was a short course, so the research and presentations were kept relatively simple. They setup their populations as a one-dimensional arrays and simulated people moving around by iterating through the array and based on a probability, removed people and inserted them in different positions. The order of the people who didn’t move didn’t change, so they had to shift every person after the insertion spot one index over.
 <p></p>

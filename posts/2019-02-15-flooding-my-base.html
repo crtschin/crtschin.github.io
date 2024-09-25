@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>(Non-)Functional Ramblings - Flooding my 'base</title>
+        <title>(Non-)Functional Ramblings - Flooding my ’base</title>
         <link rel="stylesheet" href="../css/main.css" />
         <link rel="stylesheet" href="../css/pygments.css" />
         <link rel="stylesheet" href="../css/katex.css">
@@ -13,7 +13,7 @@
     </head>
     <body>
         <header>
-            <nav>
+            <nav class="header">
                 <a class="logo" href="../">Non-Functional Ramblings</a>
                 <div class="navigation">
                     <a href="../about.html">About</a>
@@ -25,14 +25,15 @@
         </header>
 
         <main role="main">
-            <h1 class="title">Flooding my 'base</h1>
+            <h1 class="title">Flooding my ’base</h1>
             <article>
-    <section class="header">
+    <section class="publish-date">
         Posted on February 15, 2019
         
     </section>
     <section>
-        While working on my most recent hobby project in Dart, I ran into the simple problem of having a database but no data. I didn’t really want to manually go filling tables, so I tried creating a library which could do this automatically. Note that this was done using the <code>Aqueduct</code> server framework in Dart but it can easily be ported to a different less feature-rich environment.
+        <p></p>
+While working on my most recent hobby project in Dart, I ran into the simple problem of having a database but no data. I didn’t really want to manually go filling tables, so I tried creating a library which could do this automatically. Note that this was done using the <code>Aqueduct</code> server framework in Dart but it can easily be ported to a different less feature-rich environment.
 <h2 id="all-about-schemes">All about schemes</h2>
 <p></p>
 So I first had to figure out how I wanted the user to be able to specify how to fill any new objects. <code>Aqueduct</code> maintains instances of a <code>ManagedEntity</code> class which contains all of the structural data of a table. This was perfect for my needs and is also the first argument to the final <code>GenerationScheme</code> class. Its second argument is the field-function mapping to be used for the actual generation of data. This seemed the best solution instead of having the user be limited to, for example, some DSL which would then be converted to random strings <!--
