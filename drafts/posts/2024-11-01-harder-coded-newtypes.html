@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+            <meta name="description" content="I explore the use of TypeData and phantom types in Haskell as a way to improve type safety and reduce developer errors. The post aims to demonstrate a more elegant solution than newtypes.">
+        
+        <title>(Non-)Functional Ramblings - Harder-coded: Newtypes are for scrubs</title>
+        <link rel="stylesheet" href="../../css/main.css" />
+        <link rel="stylesheet" href="../../css/pygments.css" />
+        <link rel="stylesheet" href="../../css/fonts.css">
+        <link rel="stylesheet" href="../../css/katex.css" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="../../css/katex.css"></noscript>
+        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../../images/favicons/favicon57.png">
+    </head>
+    <body>
+        <header>
+            <nav class="header">
+                <a class="logo" href="../../">Non-Functional Ramblings</a>
+                <div class="navigation">
+                    <a href="../../about.html">About</a>
+                    <a href="../../static/resume.pdf">Resume</a>
+                    <a href="../../archive.html">Archive</a>
+                    <a href="../../atom.xml">Feed</a>
+                </div>
+            </nav>
+        </header>
+
+        <main role="main">
+            <h1 class="title">Harder-coded: Newtypes are for scrubs</h1>
+            <article>
+    <section class="publish-date">
+        Posted on November  1, 2024
+        
+    </section>
+    <section>
+        
+<nav class="toc"><div class="toc-header">Contents</div>
+<ul>
+<li><a href="#the-example" id="toc-the-example">The Example</a>
+<ul>
+<li><a href="#so-newtype" id="toc-so-newtype"><em>So… Newtype</em>?</a></li>
+<li><a href="#no-phantoms" id="toc-no-phantoms"><strong><em>No, Phantoms!</em></strong></a></li>
+</ul></li>
+</ul>
+</nav>
+<p></p>
+There’s quite a few fun and nifty things you can do in Haskell to avoid developer error. Things like <a href="https://wiki.haskell.org/Newtype"><code>newtype</code></a>, which some other <a href="https://doc.rust-lang.org/rust-by-example/generics/new_types.html">languages</a> <a href="https://docs.python.org/3/library/typing.html#newtype">have</a> adopted, avoids parameter blindness and ensures values are only used in specific locations.
+<p></p>
+The one I’d like to show right now, is to use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/data_kinds.html#extension-DataKinds"><code>DataKinds</code></a> (or <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_data.html#extension-TypeData"><code>TypeData</code></a>). Concretely, it’s to use <code>TypeData</code> to tag values in a similar vein to newtype.
+<h2 id="the-example">The Example</h2>
+<p></p>
+No better way than to use an example in the code of this very blog. In the Hakyll setup of this blog, I add metadata to some posts. Two markers I use for example are <code>published</code>, to indicate whether the post should be visible, and <code>includetoc</code>, to include a generated table of contents, partly using the general flow described in <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> by Riccardo Odone.
+<div class="highlight"><pre><span></span><span class="nn">---</span>
+<span class="c1"># Example of what this metadata looks like at the top of a</span>
+<span class="c1"># markdown post. Hakyll parses this section as yaml.</span>
+<span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Harder-coded</span>
+<span class="nt">published</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">includetoc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nn">---</span>
+</pre></div>
+
+<p></p>
+Both of the metadata fields are booleans<!--
+--><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote">When passing booleans, however, it becomes quite ambiguous what the user has to pass (e.g. Python and Haskell both capitalize the first letter, while go and rust don’t, yaml even accepts <code>yes</code> and <code>no</code>).
+<p></p>
+Getting from strings to booleans, is even worse if the language decides to do coercions instead of properly parsing.
+<p></p>
+And even then, parsing what? Do you accept all of <code>1</code>, <code>true</code>, <code>True</code>, <code>TRUE</code>, <code>yes</code>, <code>affirmative</code>? Language specifications are important. <span class="emoji" data-emoji="relieved">😌</span></div><!--
+-->. In my case, I want to arbitrarily accept <code>true</code>-ish values, case-insensitively matching <code>yes</code> or <code>true</code>. But simply returning boolean ‘as is’, loses the metadata key associated with the value.
+<div class="highlight"><pre><span></span><span class="nf">checkPublished'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">checkPublished'</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="p">(</span><span class="n">lookupString</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
+</pre></div>
+
+<h3 id="so-newtype"><em>So… Newtype</em>?</h3>
+<p></p>
+The simplest alternative is to create a newtype for specifically the publish boolean and to explicitly keep that separate.
+<div class="highlight"><pre><span></span><span class="kr">newtype</span><span class="w"> </span><span class="kt">IsPublished</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">IsPublished</span><span class="w"> </span><span class="p">{</span><span class="n">isPublished</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="p">}</span>
+
+<span class="nf">checkPublished''</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IsPublished</span>
+<span class="nf">checkPublished''</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="p">(</span><span class="n">lookupString</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IsPublished</span><span class="w"> </span><span class="kt">False</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IsPublished</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
+
+<span class="nf">filterPublished'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[(</span><span class="kt">IsPublished</span><span class="p">,</span><span class="w"> </span><span class="kt">Post</span><span class="p">)]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="kt">Post</span><span class="p">]</span>
+<span class="nf">filterPublished'</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mapMaybe</span><span class="w"> </span><span class="o">$</span>
+<span class="w">  </span><span class="nf">\</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="n">post</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">isPublished</span><span class="w"> </span><span class="n">flag</span>
+<span class="w">      </span><span class="kr">then</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">post</span>
+<span class="w">      </span><span class="kr">else</span><span class="w"> </span><span class="kt">Nothing</span>
+</pre></div>
+
+<p></p>
+But this now becomes problematic if I now need similar logic for my <code>includetoc</code> metadata flag, do I copypaste everything? Do I parameterize everything with a <code>(Bool -&gt; a)</code> parameter that encompases the newtype I’ll add for each flag? That sounds esoteric and horrible!
+<h3 id="no-phantoms"><strong><em>No, Phantoms!</em></strong></h3>
+<p></p>
+A solution I like here, is akin to using <code>TypeData</code> with phantom tags that serve as proof witnesses of the checking function. That’s a lot of abstract type jargon, that serves no one, so let’s break it down.
+<p></p>
+<code>TypeData</code> is the extension that allows you to define type level values. The textbook case is type level naturals via <code>type data Nat = Zero | Succ Nat</code>. For our purposes, we’ll use it to create small tags we can pass around.
+<div class="highlight"><pre><span></span><span class="kr">type</span><span class="w"> </span><span class="kr">data</span><span class="w"> </span><span class="kt">Published</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">IsPublished</span>
+<span class="kr">type</span><span class="w"> </span><span class="kr">data</span><span class="w"> </span><span class="kt">TableOfContents</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">IncludeTableOfContents</span>
+</pre></div>
+
+<p></p>
+Phantom types are the fun idea of only carrying around knowledge via variables on the type level, with no equavalent on the value level. It’s a technique that’s used quite commonly in <code>Haskell</code>. In my case, I want to attach my tags to booleans, but only on the type level.
+<div class="highlight"><pre><span></span><span class="kr">newtype</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="p">{</span><span class="n">getFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="p">}</span>
+</pre></div>
+
+<p></p>
+I didn’t change the underlying type, it’s still a <code>Bool</code>. I only added a type variable. One nice observation is that my <code>Flag IsPublished</code> is isomorphic to to the my <code>IsPublished</code> newtype I defined a bit ago.
+<p></p>
+Now I can use this flag to define generic functions over my flag types, and define “smart” constructors that introduce these type level constructors as witnesses of the fact that the flag was created correctly<!--
+--><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle" /><div class="sidenote">Without avoiding exporting the <code>Flag</code> constructor, this unfortunately doesn’t proclude someone manually creating a proof witness incorrectly.
+<div class="highlight"><pre><span></span><span class="nf">illegal</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">Published</span>
+<span class="nf">illegal</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">True</span>
+</pre></div>
+</div><!--
+-->.
+<div class="highlight"><pre><span></span><span class="nf">checkFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">checkFlag</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="p">(</span><span class="n">lookupString</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">False</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
+
+<span class="nf">isPublished</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IsPublished</span>
+<span class="nf">isPublished</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;published&quot;</span>
+
+<span class="nf">hasToC</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IncludeTableOfContents</span>
+<span class="nf">hasToC</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;includetoc&quot;</span>
+
+<span class="nf">filterFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[(</span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Post</span><span class="p">)]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="kt">Post</span><span class="p">]</span>
+<span class="nf">filterFlag</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mapMaybe</span><span class="w"> </span><span class="o">$</span>
+<span class="w">  </span><span class="nf">\</span><span class="p">(</span><span class="n">flag</span><span class="p">,</span><span class="w"> </span><span class="n">post</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span>
+<span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">getFlag</span><span class="w"> </span><span class="n">flag</span>
+<span class="w">      </span><span class="kr">then</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">post</span>
+<span class="w">      </span><span class="kr">else</span><span class="w"> </span><span class="kt">Nothing</span>
+</pre></div>
+    </section>
+</article>
+
+        </main>
+
+        <footer>
+            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
+            All content is licensed under <a href="../../license.txt">3-clause BSD license</a>.
+        </footer>
+    </body>
+</html>

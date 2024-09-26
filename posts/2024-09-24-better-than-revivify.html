@@ -4,11 +4,15 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+            <meta name="description" content="This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.">
+        
         <title>(Non-)Functional Ramblings - Better than Revivify</title>
         <link rel="stylesheet" href="../css/main.css" />
         <link rel="stylesheet" href="../css/pygments.css" />
-        <link rel="stylesheet" href="../css/katex.css">
         <link rel="stylesheet" href="../css/fonts.css">
+        <link rel="stylesheet" href="../css/katex.css" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="../css/katex.css"></noscript>
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
     </head>
     <body>
@@ -39,7 +43,7 @@
 <li><a href="#but-what-if-i-didnt" id="toc-but-what-if-i-didnt">But What if I Didn’t?</a>
 <ul>
 <li><a href="#styling" id="toc-styling">Styling</a></li>
-<li><a href="#syntax-latex" id="toc-syntax-latex">Syntax &amp; Latex</a></li>
+<li><a href="#syntax--latex" id="toc-syntax--latex">Syntax &amp; Latex</a></li>
 <li><a href="#sidenotes" id="toc-sidenotes">Sidenotes</a></li>
 <li><a href="#fonts" id="toc-fonts">Fonts</a></li>
 <li><a href="#deployment" id="toc-deployment">Deployment</a></li>
@@ -78,7 +82,7 @@ Unfortunately, the way described in the blogpost limits it to <a href="https://g
 <span class="w">            </span><span class="n">compile</span><span class="w"> </span><span class="n">createCssUsingCabal</span>
 </pre></div>
 
-<h3 id="syntax-latex">Syntax &amp; Latex</h3>
+<h3 id="syntax--latex">Syntax &amp; Latex</h3>
 <p></p>
 Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. Not much to note here, I’m not too big of a fan of including <code>.css</code> manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
 <p></p>

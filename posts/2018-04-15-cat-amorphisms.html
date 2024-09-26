@@ -4,11 +4,15 @@
         <meta charset="utf-8">
         <meta http-equiv="x-ua-compatible" content="ie=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+            <meta name="description" content="Briefly explore the concept of catamorphisms in functional programming, primarily focusing on their application to algebraic data types, such as binary trees.">
+        
         <title>(Non-)Functional Ramblings - Cat… amarphisms</title>
         <link rel="stylesheet" href="../css/main.css" />
         <link rel="stylesheet" href="../css/pygments.css" />
-        <link rel="stylesheet" href="../css/katex.css">
         <link rel="stylesheet" href="../css/fonts.css">
+        <link rel="stylesheet" href="../css/katex.css" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="../css/katex.css"></noscript>
         <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
     </head>
     <body>
@@ -43,7 +47,7 @@ One of the first higher-order functions most students encounter in a functional 
 A catamorphism is a generalization of the fold on lists<!--
 --><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote"><a href="https://www.schoolofhaskell.com/user/edwardk/recursion-schemes/catamorphisms">Kmett, E. (2014, 15 Apr) Catamorphisms. School of Haskell</a></div><!--
 -->. The word catamorphism has its roots in the Greek word ‘κατά’ meaning ‘downwards’<!--
---><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle" /><div class="sidenote">(HaskellWiki, Catamorphisms)[https://wiki.haskell.org/Catamorphisms]</div><!--
+--><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle" /><div class="sidenote">(HaskellWiki, Catamorphisms)[<a href="https://wiki.haskell.org/Catamorphisms" class="uri">https://wiki.haskell.org/Catamorphisms</a>]</div><!--
 -->. In this case it is the concept of applying a fold on any algebraic data type. An algebraic data type is any data type composed of other types – as an example, take the following data type for a binary tree I will use throughout this post.
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">Tree</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">Empty</span>
 <span class="w">  </span><span class="o">|</span><span class="w"> </span><span class="kt">Leaf</span><span class="w"> </span><span class="n">a</span>
