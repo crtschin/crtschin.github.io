@@ -143,6 +143,7 @@ There’re some more nice blogposts I used to add several niceties.
 <ul>
 <li>Drafts: I found <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> on being able to include drafts in Hakyll.</li>
 <li>Feeds: I added both RSS and Atom feeds following <a href="https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html">Robert Pearce’s example</a>.</li>
+<li>Formatted Titles: In the base setup, titles are pulled from metadata and inserted into the templates without going to the pandoc transformation. Which means that every character is piped verbatim, no bold, italics, monospace, no anything. Just plain old characters. <a href="https://frasertweedale.github.io/blog-fp/posts/2021-01-11-hakyll-title-formatting.html">This post</a> describes a nice solution, using the first header in the content as the title of the post instead, which does include any formatting conversion done by pandoc.</li>
 <li>Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog. I didn’t follow any instruction on doing this, but improvising it was simple enough.</li>
 </ul>
 <p></p>
