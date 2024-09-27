@@ -7,7 +7,7 @@
         
             <meta name="description" content="I explore the use of TypeData and phantom types in Haskell as a way to improve type safety and reduce developer errors. The post aims to demonstrate a more elegant solution than newtypes.">
         
-        <title>(Non-)Functional Ramblings - Harder-Coded: Newtypes Are for Scrubs</title>
+        <title>(Non-)Functional Ramblings - Harder-Coded: Simple Newtypes Are for Scrubs</title>
         <link rel="stylesheet" href="../../css/main.css" />
         <link rel="stylesheet" href="../../css/pygments.css" />
         <link rel="stylesheet" href="../../css/fonts.css">
@@ -29,7 +29,7 @@
         </header>
 
         <main role="main">
-            <h1 class="title">Harder-Coded: Newtypes Are for Scrubs</h1>
+            <h1 class="title">Harder-Coded: Simple Newtypes Are for Scrubs</h1>
             <article>
     <section class="publish-date">
         Posted on November  1, 2024
@@ -44,12 +44,13 @@
 <li><a href="#so-newtype" id="toc-so-newtype"><em>So… Newtype</em>?</a></li>
 <li><a href="#no-phantoms" id="toc-no-phantoms"><strong><em>No, Phantoms!</em></strong></a></li>
 </ul></li>
+<li><a href="#a-bit-contrived" id="toc-a-bit-contrived">A Bit Contrived</a></li>
 </ul>
 </nav>
 <p></p>
 There’s quite a few fun and nifty things you can do in Haskell to avoid developer error. Things like <a href="https://wiki.haskell.org/Newtype"><code>newtype</code></a>, which some other <a href="https://doc.rust-lang.org/rust-by-example/generics/new_types.html">languages</a> <a href="https://docs.python.org/3/library/typing.html#newtype">have</a> adopted, avoids parameter blindness and ensures values are only used in specific locations.
 <p></p>
-The one I’d like to show right now, is to use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/data_kinds.html#extension-DataKinds"><code>DataKinds</code></a> (or <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_data.html#extension-TypeData"><code>TypeData</code></a>). Concretely, it’s to use <code>TypeData</code> to tag values in a similar vein to newtype.
+The one I’d like to show right now, is to use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/data_kinds.html#extension-DataKinds"><code>DataKinds</code></a> (or <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_data.html#extension-TypeData"><code>TypeData</code></a>). Concretely, it’s to use type-level tag values in a similar vein to newtype.
 <h2 id="the-example">The Example</h2>
 <p></p>
 No better way than to use an example in the code of this very blog. In the Hakyll setup of this blog, I add metadata to some posts. Two markers I use for example are <code>published</code>, to indicate whether the post should be visible, and <code>includetoc</code>, to include a generated table of contents, partly using the general flow described in <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> by Riccardo Odone.
@@ -124,15 +125,9 @@ Now I can use this flag to define generic functions over my flag types, and defi
 -->.
 <div class="highlight"><pre><span></span><span class="nf">checkFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span>
 <span class="nf">checkFlag</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
-<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="p">(</span><span class="n">lookupString</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">lookupString</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="kr">of</span>
 <span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">False</span>
-<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
-
-<span class="nf">isPublished</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IsPublished</span>
-<span class="nf">isPublished</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;published&quot;</span>
-
-<span class="nf">hasToC</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IncludeTableOfContents</span>
-<span class="nf">hasToC</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;includetoc&quot;</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
 
 <span class="nf">filterFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">[(</span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">Post</span><span class="p">)]</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">[</span><span class="kt">Post</span><span class="p">]</span>
 <span class="nf">filterFlag</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mapMaybe</span><span class="w"> </span><span class="o">$</span>
@@ -140,6 +135,82 @@ Now I can use this flag to define generic functions over my flag types, and defi
 <span class="w">    </span><span class="kr">if</span><span class="w"> </span><span class="n">getFlag</span><span class="w"> </span><span class="n">flag</span>
 <span class="w">      </span><span class="kr">then</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">post</span>
 <span class="w">      </span><span class="kr">else</span><span class="w"> </span><span class="kt">Nothing</span>
+</pre></div>
+
+<h2 id="a-bit-contrived">A Bit Contrived</h2>
+<p></p>
+So I’ve discussed how to easily handle boolean flags in post metadata, but the same approach can be extended to other types of data as well. Say I wanted to support guest authors and put their names under titles in posts, but only when a guest author is actually relevant (otherwise it’s me!).
+<div class="highlight"><pre><span></span><span class="nn">---</span>
+<span class="nt">published</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">includetoc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Billy Bob Barker (fictional)</span>
+<span class="nn">---</span>
+</pre></div>
+
+<p></p>
+If I follow similar line of thinking as the previous section. I’d build a wrapper akin to <code>newtype Attribute a = Attribute (Maybe String)</code>, but then have almost, but not quite the same logic as I do for <code>Flag</code>. This code duplication is again, kind of an eyesore. So let’s create something <em>a bit</em> more generic.
+<p></p>
+In identifiable pattern here is that datatype encodes a value whose construction is checked against <em>something</em> (that something could also be a hardcoded value written by hand, thereby going through some mental hueristic). I can write that as a datatype, whose specialization are both the <code>Attribute</code> and <code>Flag</code> types.
+<div class="highlight"><pre><span></span><span class="c1">-- Generalizes both `Flag` and `Attribute`, and any other value type with an</span>
+<span class="c1">-- additional phantom type variable.</span>
+<span class="kr">newtype</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="p">{</span><span class="n">getCheckedValue</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span><span class="p">}</span>
+
+<span class="c1">-- These are isomorphic to my original phantom newtype wrappers.</span>
+<span class="kr">type</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="n">a</span>
+<span class="kr">type</span><span class="w"> </span><span class="kt">Attribute</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="p">(</span><span class="kt">Maybe</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="n">a</span>
+<span class="c1">-- A tag I'll use for the guest-authorship.</span>
+<span class="kr">type</span><span class="w"> </span><span class="kr">data</span><span class="w"> </span><span class="kt">Author</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">GuestAuthor</span>
+
+<span class="c1">-- I can write smart helper that specialize the type variables in CheckedValue</span>
+<span class="nf">flag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Bool</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">flag</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">CheckedValue</span>
+<span class="nf">getFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+<span class="nf">getFlag</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">getCheckedValue</span>
+
+<span class="nf">attribute</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Attribute</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">attribute</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="o">.</span><span class="w"> </span><span class="kt">Just</span>
+<span class="nf">getAttribute</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Attribute</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="kt">String</span>
+<span class="nf">getAttribute</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">getCheckedValue</span>
+</pre></div>
+
+<p></p>
+Constructing this <code>CheckedValue</code> datatype can be created generically, with the idea that its usages implement the assertion of whatever the specialized phantom will be filled with. I’ll show what this means by reimplementing the truthy-parsing for flags, and the optional non-me authorship.
+<div class="highlight"><pre><span></span><span class="nf">checkMetadata</span>
+<span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="n">a</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span>
+<span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">b</span>
+<span class="nf">checkMetadata</span><span class="w"> </span><span class="n">defaultValue</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">lookupString</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="n">defaultValue</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">CheckedValue</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="n">t</span><span class="p">)</span>
+
+<span class="nf">checkFlag</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">checkFlag</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkMetadata</span><span class="w"> </span><span class="kt">False</span><span class="w"> </span><span class="n">parsesTrue</span>
+<span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">parsesTrue</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="kt">Char</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
+
+<span class="nf">checkAttribute</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Maybe</span><span class="w"> </span><span class="kt">String</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Attribute</span><span class="w"> </span><span class="n">a</span>
+<span class="nf">checkAttribute</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkMetadata</span><span class="w"> </span><span class="kt">Nothing</span>
+</pre></div>
+
+<p></p>
+The specialized helpers ensure that usage sites can still limit what kind of scoped values are passed through, but even if it didn’t, the phantom type variables imply another barrier of entry before a function parameter is accepted.
+<p></p>
+One observation is that each type variable can encode one degree of functionality. I use the non-phantom variable, which I use to specialize to <code>Flag</code> and <code>Attribute</code>, to encode what kind of value is contained. While the phantom type variable encodes the key in the blogpost’s yaml that’s used to pull in the metadata value.
+<p></p>
+I’ll finish this off with a showcase of value constructor functions and how easily they pull string data from the <code>Metadata</code> of a post into the typed world, applying any necessary conditions.
+<div class="highlight"><pre><span></span><span class="nf">isPublished</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IsPublished</span>
+<span class="nf">isPublished</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;published&quot;</span>
+
+<span class="nf">hasToC</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Flag</span><span class="w"> </span><span class="kt">IncludeTableOfContents</span>
+<span class="nf">hasToC</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkFlag</span><span class="w"> </span><span class="s">&quot;includetoc&quot;</span>
+
+<span class="nf">getAuthor</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Attribute</span><span class="w"> </span><span class="kt">GuestAuthor</span>
+<span class="nf">getAuthor</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">checkAttribute</span><span class="w"> </span><span class="n">isNotMe</span><span class="w"> </span><span class="s">&quot;author&quot;</span>
+<span class="w"> </span><span class="kr">where</span>
+<span class="w">  </span><span class="n">isNotMe</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Curtis Chin Jen Sem&quot;</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="kt">Nothing</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span>
 </pre></div>
     </section>
 </article>
