@@ -18,7 +18,7 @@
     <body>
         <header>
             <nav class="header">
-                <a class="logo" href="../../">Non-Functional Ramblings</a>
+                <a class="logo" href="../../">(Non-)Functional Ramblings</a>
                 <div class="navigation">
                     <a href="../../about.html">About</a>
                     <a href="../../static/resume.pdf">Resume</a>
@@ -37,9 +37,9 @@
     </section>
     <section>
         <p></p>
-I encountered an interesting problem recently, where I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand, to avoid paying the price of initializing the entire pool when I might only need to do a singular action using one resource.
+I encountered an interesting problem recently, where I needed to initialize a pool of resources. The caveat here is though, for performance reasons, I only wanted to initialize resources on demand. Mainly to avoid paying the price of initializing the entire pool, when I might only need to do a singular action using one resource.
 <p></p>
-Imagine some usecase where we might have a pool of files we need to read over the network and some work we intend to do on each file contents. This <code>FileHandle</code> is the resource we’ll manually manage.
+Everyone likes a nice usecase, so let’s set the scene. Imagine you have a pool of files you need to read over the network, and some work you have to do on each file’s contents. This <code>FileHandle</code> is the resource we’ll manage manually, ensuring the connections is properly both, initialized and finalized.
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="p">{</span><span class="o">...</span><span class="p">}</span>
 
 <span class="nf">doWork</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">FileHandle</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="kt">Int</span>
@@ -48,7 +48,7 @@ Imagine some usecase where we might have a pool of files we need to read over th
 
 <h2 id="explicit-lazy-resources">Explicit Lazy Resources</h2>
 <p></p>
-I’ll start with initializing a single resource lazily and only afterwards create a pool from there. Doing anything with resources implies using something like <code>bracket</code> to ensure finalization in the presence of exceptions. Though <code>bracket</code> isn’t enough by itself in this case, as <code>bracket</code> implies strict usage of the resource. What we can do, however, is create an explicitly lazy wrapper around initializing our resources and use that within bracket instead.
+Let’s start with initializing a single one of these <code>FileHandle</code> resource lazily, and only afterwards create a pool from there. Doing anything with resources implies using something like <code>bracket</code> to ensure finalization in the presence of exceptions. Though <code>bracket</code> isn’t enough by itself in this case, as <code>bracket</code> implies strict usage of the resource. What we can do, however, is create an explicitly lazy wrapper around our initialization and use that as the resource within <code>bracket</code> instead.
 <div class="highlight"><pre><span></span><span class="kr">data</span><span class="w"> </span><span class="kt">LazyResource</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="n">a</span>
 <span class="w">    </span><span class="ow">=</span><span class="w"> </span><span class="kt">Uninitialized</span><span class="w"> </span><span class="p">(</span><span class="n">m</span><span class="w"> </span><span class="n">a</span><span class="p">)</span>
 <span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="kt">Initialized</span><span class="w"> </span><span class="n">a</span>
@@ -56,7 +56,7 @@ I’ll start with initializing a single resource lazily and only afterwards crea
 </pre></div>
 
 <p></p>
-We’ll need something extra to maintain what state the resource currently exists in, however. We could do something <code>State</code>-style and do <code>LazyResource a -&gt; (LazyResource a, r)</code>, but while concrete, that’s not very user friendly, and also not threadsafe. Alternatively, we could wrap the lazy wrapper and persist the resource’s state in an <code>MVar</code> cell.
+We’ll need something extra to maintain what state the resource currently exists in, however. We could do something <code>State</code>-style and do <code>LazyResource a -&gt; (LazyResource a, r)</code>, but while concrete, that’s not very user friendly, and also does nothing for thread-safety, if we want to use this resource concurrently. A simple alternatively is to encase the lazy wrapper and persist the resource’s state in an <code>MVar</code> cell.
 <div class="highlight"><pre><span></span><span class="c1">-- | Anytime we use the resource, we trigger the deferred the initialization.</span>
 <span class="nf">withLazyResource</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">MVar</span><span class="w"> </span><span class="p">(</span><span class="kt">LazyResource</span><span class="w"> </span><span class="n">a</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span>
 <span class="nf">withLazyResource</span><span class="w"> </span><span class="n">lazyResourceRef</span><span class="w"> </span><span class="n">continuation</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">mask</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="nf">\</span><span class="n">restore</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kr">do</span>
@@ -95,7 +95,7 @@ Keeping it simple, I’ll keep track of all resources in the pool in a simple li
 </pre></div>
 
 <p></p>
-For nesting consecutive <code>with</code>-like functions, there’s a neat trick you can do with <code>kan-extensions</code>’ <code>Codensity</code> wrapper.
+For nesting consecutive <code>with</code>-like functions, there’s a neat trick you can do with <code>kan-extensions</code>’ <code>Codensity</code> type.
 <div class="highlight"><pre><span></span><span class="nf">withPool</span>
 <span class="w">  </span><span class="ow">::</span><span class="w"> </span><span class="p">(</span><span class="n">forall</span><span class="w"> </span><span class="n">r</span><span class="o">.</span><span class="w"> </span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">IO</span><span class="w"> </span><span class="n">r</span><span class="p">)</span>
 <span class="w">  </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Int</span>
@@ -120,7 +120,7 @@ That’s it! Using the pool is should be straightforward, keeping the resources 
 
         <footer>
             Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
-            All content is licensed under <a href="../../license.txt">3-clause BSD license</a>.
+            All content is licensed under <a href="../../LICENSE.txt">3-clause BSD license</a>.
         </footer>
     </body>
 </html>

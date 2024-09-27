@@ -18,7 +18,7 @@
     <body>
         <header>
             <nav class="header">
-                <a class="logo" href="../../">Non-Functional Ramblings</a>
+                <a class="logo" href="../../">(Non-)Functional Ramblings</a>
                 <div class="navigation">
                     <a href="../../about.html">About</a>
                     <a href="../../static/resume.pdf">Resume</a>
@@ -50,10 +50,10 @@
 <p></p>
 There’s quite a few fun and nifty things you can do in Haskell to avoid developer error. Things like <a href="https://wiki.haskell.org/Newtype"><code>newtype</code></a>, which some other <a href="https://doc.rust-lang.org/rust-by-example/generics/new_types.html">languages</a> <a href="https://docs.python.org/3/library/typing.html#newtype">have</a> adopted, avoids parameter blindness and ensures values are only used in specific locations.
 <p></p>
-The one I’d like to show right now, is to use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/data_kinds.html#extension-DataKinds"><code>DataKinds</code></a> (or <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_data.html#extension-TypeData"><code>TypeData</code></a>). Concretely, it’s to use type-level tag values in a similar vein to newtype.
+The one I’d like to show right now, is to use <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/data_kinds.html#extension-DataKinds"><code>DataKinds</code></a> (or <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/type_data.html#extension-TypeData"><code>TypeData</code></a>) to achieve something similar using type-level tag values.
 <h2 id="the-example">The Example</h2>
 <p></p>
-No better way than to use an example in the code of this very blog. In the Hakyll setup of this blog, I add metadata to some posts. Two markers I use for example are <code>published</code>, to indicate whether the post should be visible, and <code>includetoc</code>, to include a generated table of contents, partly using the general flow described in <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> by Riccardo Odone.
+The easiest example I can think of, is none other than this blog! In the Hakyll setup of this blog, I add metadata to some posts. Two markers I use for example, are <code>published</code>, to indicate whether the post should be visible, and <code>includetoc</code>, to include a generated table of contents, partly using the general flow described in <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> by Riccardo Odone.
 <div class="highlight"><pre><span></span><span class="nn">---</span>
 <span class="c1"># Example of what this metadata looks like at the top of a</span>
 <span class="c1"># markdown post. Hakyll parses this section as yaml.</span>
@@ -67,15 +67,17 @@ No better way than to use an example in the code of this very blog. In the Hakyl
 Both of the metadata fields are booleans<!--
 --><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote">When passing booleans, however, it becomes quite ambiguous what the user has to pass (e.g. Python and Haskell both capitalize the first letter, while go and rust don’t, yaml even accepts <code>yes</code> and <code>no</code>).
 <p></p>
-Getting from strings to booleans, is even worse if the language decides to do coercions instead of properly parsing.
+Getting from strings to booleans, is even worse if the language decides to do automatic conversions instead of forcing the user to properly parse. Looking at you javascript. <span class="emoji" data-emoji="eyes">👀</span>
 <p></p>
-And even then, parsing what? Do you accept all of <code>1</code>, <code>true</code>, <code>True</code>, <code>TRUE</code>, <code>yes</code>, <code>affirmative</code>? Language specifications are important. <span class="emoji" data-emoji="relieved">😌</span></div><!--
--->. In my case, I want to arbitrarily accept <code>true</code>-ish values, case-insensitively matching <code>yes</code> or <code>true</code>. But simply returning boolean ‘as is’, loses the metadata key associated with the value.
-<div class="highlight"><pre><span></span><span class="nf">checkPublished'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
+But even if you did parse appropriately, parse what exactly? Do you accept all of <code>1</code>, <code>true</code>, <code>True</code>, <code>TRUE</code>, <code>yes</code>? How about <code>sure</code>, <code>affirmative</code> or <code>accept</code>? Language specifications are important. <span class="emoji" data-emoji="relieved">😌</span></div><!--
+-->. In my case, I want to arbitrarily accept <code>true</code>-ish values, case-insensitively matching <code>yes</code> or <code>true</code>. But simply returning booleans ‘as is’, loses the metadata key associated with the value.
+<div class="highlight"><pre><span></span><span class="c1">-- The `Bool` has no connection to the fact that it was pulled from the</span>
+<span class="c1">-- &quot;published&quot; key.</span>
+<span class="nf">checkPublished'</span><span class="w"> </span><span class="ow">::</span><span class="w"> </span><span class="kt">String</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Metadata</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Bool</span>
 <span class="nf">checkPublished'</span><span class="w"> </span><span class="n">key</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="ow">=</span>
-<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">fmap</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">pack</span><span class="w"> </span><span class="p">(</span><span class="n">lookupString</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="n">meta</span><span class="p">)</span><span class="w"> </span><span class="kr">of</span>
+<span class="w">  </span><span class="kr">case</span><span class="w"> </span><span class="n">lookupString</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="kr">of</span>
 <span class="w">    </span><span class="kt">Nothing</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">False</span>
-<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="kt">Text</span><span class="o">.</span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">-&gt;</span><span class="w"> </span><span class="n">map</span><span class="w"> </span><span class="n">toLower</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="p">`</span><span class="n">elem</span><span class="p">`</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;yes&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;true&quot;</span><span class="p">]</span>
 </pre></div>
 
 <h3 id="so-newtype"><em>So… Newtype</em>?</h3>
@@ -212,6 +214,9 @@ I’ll finish this off with a showcase of value constructor functions and how ea
 <span class="w"> </span><span class="kr">where</span>
 <span class="w">  </span><span class="n">isNotMe</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="kr">if</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&quot;Curtis Chin Jen Sem&quot;</span><span class="w"> </span><span class="kr">then</span><span class="w"> </span><span class="kt">Nothing</span><span class="w"> </span><span class="kr">else</span><span class="w"> </span><span class="kt">Just</span><span class="w"> </span><span class="n">t</span>
 </pre></div>
+
+<p></p>
+<sub><em>The title is tongue-in-cheek. Don’t always do this. Blind advises and tips and tricks are a horrible idea. Use whatever makes sense for your code!</em></sub>
     </section>
 </article>
 
@@ -219,7 +224,7 @@ I’ll finish this off with a showcase of value constructor functions and how ea
 
         <footer>
             Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
-            All content is licensed under <a href="../../license.txt">3-clause BSD license</a>.
+            All content is licensed under <a href="../../LICENSE.txt">3-clause BSD license</a>.
         </footer>
     </body>
 </html>
