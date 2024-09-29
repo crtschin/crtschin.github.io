@@ -55,23 +55,23 @@
 I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href="./2020-09-18-roly-oly-polyvariadic-boogaloo.html">2020</a>, prior to me even graduating university.
 <h2 id="update">Update?</h2>
 <p></p>
-I have some free time right now and I’ve had some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well, I wasn’t very good with automated updates, nor had I touched my blog, then built with <a href="https://ghost.org/"><code>ghost</code></a>. Even worse, I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.
+I have some free time right now and I’ve have some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well… I didn’t set up any automated updates, nor had I touched my blog in years, then built with <a href="https://ghost.org/"><code>ghost</code></a>. Even worse, it wasn’t just <code>ghost</code> that needed to be updated. I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.
 <p></p>
 I tried for a bit, but after some hair pulling, I thought: “Why not just recreate this trash completely?”. I wasn’t too happy with <code>ghost</code> anyway, it was way too overkill for my purposes, I didn’t need subscribers or mailing lists. Just a static site with some words on it, perhaps with some styling and some files I could host.
 <h2 id="but-what-if-i-didnt">But What if I Didn’t?</h2>
 <p></p>
-In comes Github pages, a free way to host static websites! I’ve wanted to try using Github pages for quite a while, and I’m already quite familiar with Github, having to use it for work.
+In comes <a href="https://pages.github.com/">Github Pages</a>, a free way to host static websites! I’ve wanted to try using it for quite a while, and I’m already quite familiar with Github, having to use it for work.
 <p></p>
-To use Github pages, I’d need a static site generator. The typical choice here is <a href="https://jekyllrb.com/">Jekyll</a>, even being recommend on the pages site on <a href="https://pages.github.com/">Github pages</a>. I’ve chosen a Haskell alternative called <a href="https://jaspervdj.be/hakyll/">Hakyll</a>, for the simple reason that I like to use Haskell. Getting it up and running was quite simple enough; the Hakyll tutorial ends with a nice working blog website with a few placeholder posts. My next step was to translate the <code>ghost</code><!--
+To use it, I’d need a static site generator. The typical choice here is <a href="https://jekyllrb.com/">Jekyll</a>, even being recommend on their own site. I’ve chosen a Haskell alternative called <a href="https://jaspervdj.be/hakyll/">Hakyll</a>, for the simple reason that I like to use Haskell. Getting it up and running was quick; the Hakyll tutorial ends with a nice working blog website with a few placeholder posts. My next step was to translate the <code>ghost</code><!--
 --><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote"><a href="https://web.archive.org/web/20240817152043/https://crtschin.com/">Here’s an archive</a> I could find of my website. I broke everything attempting to update my VPS, so getting a production example wasn’t exactly possible.</div><!--
 --> content I’d backed up, to the markdown files Hakyll builds into html using pandoc.
 <p></p>
-After that tedium came the fun part, getting everything exactly as I liked it. Here’s a few things I changed or added, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll. As always, I’m standing on the shoulders of giants.
+After that tedium came the fun part, getting everything exactly as I liked it. I’ll go over noteworthy things I changed or added to my setup, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll. As always, I’m standing on the shoulders of giants.
 <h3 id="styling">Styling</h3>
 <p></p>
 After clunking around in CSS for a bit trying to get a consistent color scheme based on gruvbox, this very <a href="https://jaspervdj.be/hakyll/tutorials/using-clay-with-hakyll.html">short post</a> gave me the idea to use <a href="http://fvisser.nl/clay/">Clay</a> for my styling instead. I didn’t know Clay existed prior, but I definitely liked the idea of using Haskell for everything.
 <p></p>
-Unfortunately, the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which I don’t really like. So instead, I run the script as an executable via cabal. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
+Unfortunately, the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which seemed counterproductive to the idea of using a preprocessor in the first place. So instead, I run the script as an executable via cabal. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
 <div class="highlight"><pre><span></span><span class="nf">main</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">hakyll</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
 <span class="w">    </span><span class="o">...</span>
 <span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">compile</span><span class="w"> </span><span class="n">getResourceBody</span>
@@ -84,14 +84,14 @@ Unfortunately, the way described in the blogpost limits it to <a href="https://g
 
 <h3 id="syntax--latex">Syntax &amp; Latex</h3>
 <p></p>
-Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. Not much to note here, I’m not too big of a fan of including <code>.css</code> manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
+Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. I didn’t deviate much from that. I’m not too big of a fan of including the <code>.css</code> file manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
 <p></p>
 Similarly, I was able to follow <a href="https://tony-zorman.com/posts/katex-with-hakyll.html">this post</a> to use <a href="https://katex.org/">KaTeX</a>.
 <h3 id="sidenotes">Sidenotes</h3>
 <p></p>
-I like to use side notes quite a bit instead of footnotes, as I find it often detracts from the point if the reader is compelled to jump to a different section of the page. For sidenotes, there already exists <a href="https://hackage.haskell.org/package/pandoc-sidenote">a package</a> I could reuse after flipping the <a href="https://github.com/jez/pandoc-sidenote/pull/26">html-sidenotes</a> flag that isn’t on hackage yet.
+I like to use side notes quite a bit instead of footnotes, as I find it often detracts from the point you’re making, if the reader is compelled to jump to a different section of the page. For sidenotes, there already exists <a href="https://hackage.haskell.org/package/pandoc-sidenote">a package</a> I could reuse after flipping the <a href="https://github.com/jez/pandoc-sidenote/pull/26">html-sidenotes</a> flag that isn’t on hackage yet.
 <p></p>
-Using nix, I just override the <code>pandoc-sidenotes</code> version in the overlay that’s used while creating my shell, and it’ll automatically be installed in the shell-provided <code>ghc</code>.
+Using nix, I just overrode the <code>pandoc-sidenotes</code> version in the overlay that’s used while creating my shell, and it’ll automatically be installed in the shell-provided <code>ghc</code>.
 <div class="highlight"><pre><span></span>makeHaskellOverlay <span class="p">(</span>prev<span class="p">:</span> hfinal<span class="p">:</span> hprev<span class="p">:</span>
   <span class="p">{</span>
     <span class="ss">pandoc-sidenote</span> <span class="o">=</span> hprev<span class="o">.</span>callCabal2nixWithOptions <span class="s2">&quot;pandoc-sidenote&quot;</span>
@@ -145,10 +145,21 @@ I was able to riff off of <a href="https://vllmrt.net/spam/hakyll-github-actions
 <p></p>
 There’re some more nice blogposts I used to add several niceties.
 <ul>
-<li>Drafts: I found <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> on being able to include drafts in Hakyll.</li>
-<li>Feeds: I added both RSS and Atom feeds following <a href="https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html">Robert Pearce’s example</a>.</li>
-<li>Formatted Titles: In the base setup, titles are pulled from metadata and inserted into the templates without going to the pandoc transformation. Which means that every character is piped verbatim, no bold, italics, monospace, no anything. Just plain old characters. <a href="https://frasertweedale.github.io/blog-fp/posts/2021-01-11-hakyll-title-formatting.html">This post</a> describes a nice solution, using the first header in the content as the title of the post instead, which does include any formatting conversion done by pandoc.</li>
-<li>Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog. I didn’t follow any instruction on doing this, but improvising it was simple enough.</li>
+<li><p></p>
+
+Drafts: I found <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> on being able to include drafts in Hakyll.</li>
+<li><p></p>
+
+Feeds: I added both RSS and Atom feeds following <a href="https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html">Robert Pearce’s example</a>.</li>
+<li><p></p>
+
+Formatted Titles: In the base setup, titles are pulled from metadata and inserted into the templates without going to the pandoc transformation. Which means that every character is piped verbatim, no bold, italics, monospace, no anything. Just plain old characters. <a href="https://frasertweedale.github.io/blog-fp/posts/2021-01-11-hakyll-title-formatting.html">This post</a> describes a nice solution, using the first header in the content as the title of the post instead, which does include any formatting conversion done by pandoc.</li>
+<li><p></p>
+
+Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog.
+<p></p>
+
+I didn’t follow any instruction on doing this, but improvising it was simple enough. I just had to ad the latex dependencies to my nix environment and create my resume in a similar fashion to how the syntax highlighting is set up, calling out to <code>latexmk</code> to build my resume file.</li>
 </ul>
 <p></p>
 All-in-all, this was quite fun. Hakyll is very nice to work with. It’s understandably peculiar when building things that have dependencies, such as using <code>rulesExtraDependencies</code> to handle dependencies of files that are created via <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Compiler.html#v:unsafeCompiler">IO</a>. But getting it all into, what I think is, a nice result was pretty easy and painless.
