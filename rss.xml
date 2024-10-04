@@ -12,7 +12,7 @@
     <title>Better than Revivify</title>
     <link>https://crtschin.com/posts/2024-09-24-better-than-revivify.html</link>
     <description><![CDATA[This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Tue, 24 Sep 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2024-09-24-better-than-revivify.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -20,7 +20,7 @@
     <title>What’s in the Name?</title>
     <link>https://crtschin.com/posts/2024-09-20-all-about-representations.html</link>
     <description><![CDATA[This blog post explores different approaches to implementing a lambda calculus interpreter. It examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Fri, 20 Sep 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2024-09-20-all-about-representations.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -28,7 +28,7 @@
     <title>Roly, Oly, …, Polyvariadic Boogaloo</title>
     <link>https://crtschin.com/posts/2020-09-18-roly-oly-polyvariadic-boogaloo.html</link>
     <description><![CDATA[In the blog post, I author revisits the topic of polyvariadic functions in Haskell, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Fri, 18 Sep 2020 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2020-09-18-roly-oly-polyvariadic-boogaloo.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -36,7 +36,7 @@
     <title>Roly, Oly, …, Polyvariadic</title>
     <link>https://crtschin.com/posts/2019-07-06-roly-oly-polyvariadic.html</link>
     <description><![CDATA[This blog post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Sat, 06 Jul 2019 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2019-07-06-roly-oly-polyvariadic.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -44,7 +44,7 @@
     <title>Flooding my ’base</title>
     <link>https://crtschin.com/posts/2019-02-15-flooding-my-base.html</link>
     <description><![CDATA[I discuss populating a database with generated data, resulting in a simple solution that generates objects sequentially, following a topological sort to ensure dependency preservation.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Fri, 15 Feb 2019 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2019-02-15-flooding-my-base.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -52,7 +52,7 @@
     <title>Cat… amarphisms</title>
     <link>https://crtschin.com/posts/2018-04-15-cat-amorphisms.html</link>
     <description><![CDATA[Briefly explore the concept of catamorphisms in functional programming, primarily focusing on their application to algebraic data types, such as binary trees.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Sun, 15 Apr 2018 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2018-04-15-cat-amorphisms.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
@@ -60,7 +60,7 @@
     <title>Shuffle-athon</title>
     <link>https://crtschin.com/posts/2017-11-10-shuffle-athon.html</link>
     <description><![CDATA[Examine the problem of shuffling a one-dimensional array in a single pass, employing a linked list structure along with reservoir sampling for random selection.]]></description>
-    <pubDate>true</pubDate>
+    <pubDate>Fri, 10 Nov 2017 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/2017-11-10-shuffle-athon.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>

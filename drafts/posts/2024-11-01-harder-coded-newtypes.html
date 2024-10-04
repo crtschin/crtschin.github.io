@@ -58,7 +58,7 @@ The easiest example I can think of, is none other than this blog! In the Hakyll 
 <span class="c1"># Example of what this metadata looks like at the top of a</span>
 <span class="c1"># markdown post. Hakyll parses this section as yaml.</span>
 <span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Harder-coded</span>
-<span class="nt">published</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">ispublished</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="nt">includetoc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="nn">---</span>
 </pre></div>
@@ -143,7 +143,7 @@ Now I can use this flag to define generic functions over my flag types, and defi
 <p></p>
 So I’ve discussed how to easily handle boolean flags in post metadata, but the same approach can be extended to other types of data as well. Say I wanted to support guest authors and put their names under titles in posts, but only when a guest author is actually relevant (otherwise it’s me!).
 <div class="highlight"><pre><span></span><span class="nn">---</span>
-<span class="nt">published</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="nt">ispublished</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 <span class="nt">includetoc</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="nt">author</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Billy Bob Barker (fictional)</span>
 <span class="nn">---</span>
