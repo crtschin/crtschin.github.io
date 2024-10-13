@@ -1,176 +1,42 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="x-ua-compatible" content="ie=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        
-            <meta name="description" content="This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.">
-        
-        <title>(Non-)Functional Ramblings - Better than Revivify</title>
-        <link rel="stylesheet" href="../css/main.css" />
-        <link rel="stylesheet" href="../css/pygments.css" />
-        <link rel="stylesheet" href="../css/fonts.css">
-        <link rel="stylesheet" href="../css/katex.css" media="print" onload="this.media='all'">
-        <noscript><link rel="stylesheet" href="../css/katex.css"></noscript>
-        <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"><link rel="shortcut icon" href="../images/favicons/favicon32.png"><link rel="apple-touch-icon-precomposed" sizes="144x144" href="../images/favicons/favicon144.png"><link rel="apple-touch-icon-precomposed" sizes="114x114" href="../images/favicons/favicon114.png"><link rel="apple-touch-icon-precomposed" sizes="72x72" href="../images/favicons/favicon72.png"><link rel="apple-touch-icon-precomposed" sizes="57x57" href="../images/favicons/favicon57.png">
-    </head>
-    <body>
-        <header>
-            <nav class="header">
-                <a class="logo" href="../">(Non-)Functional Ramblings</a>
-                <div class="navigation">
-                    <a href="../about.html">About</a>
-                    <a href="../static/resume.pdf">Resume</a>
-                    <a href="../archive.html">Archive</a>
-                    <a href="../atom.xml">Feed</a>
-                </div>
-            </nav>
-        </header>
-
-        <main role="main">
-            <h1 class="title">Better than Revivify</h1>
-            <article>
-    <section class="publish-date">
-        Posted on September 24, 2024
-        
-    </section>
-    <section>
-        
-<nav class="toc"><div class="toc-header">Contents</div>
-<ul>
-<li><a href="#update" id="toc-update">Update?</a></li>
-<li><a href="#but-what-if-i-didnt" id="toc-but-what-if-i-didnt">But What if I Didn’t?</a>
-<ul>
-<li><a href="#styling" id="toc-styling">Styling</a></li>
-<li><a href="#syntax--latex" id="toc-syntax--latex">Syntax &amp; Latex</a></li>
-<li><a href="#sidenotes" id="toc-sidenotes">Sidenotes</a></li>
-<li><a href="#fonts" id="toc-fonts">Fonts</a></li>
-<li><a href="#deployment" id="toc-deployment">Deployment</a></li>
-<li><a href="#misc" id="toc-misc">Misc</a></li>
-</ul></li>
-</ul>
-</nav>
-<p></p>
-I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href="./2020-09-18-roly-oly-polyvariadic-boogaloo.html">2020</a>, prior to me even graduating university.
-<h2 id="update">Update?</h2>
-<p></p>
-I have some free time right now and I’ve have some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well… I didn’t set up any automated updates, nor had I touched my blog in years, then built with <a href="https://ghost.org/"><code>ghost</code></a>. Even worse, it wasn’t just <code>ghost</code> that needed to be updated. I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.
-<p></p>
-I tried for a bit, but after some hair pulling, I thought: “Why not just recreate this trash completely?”. I wasn’t too happy with <code>ghost</code> anyway, it was way too overkill for my purposes, I didn’t need subscribers or mailing lists. Just a static site with some words on it, perhaps with some styling and some files I could host.
-<h2 id="but-what-if-i-didnt">But What if I Didn’t?</h2>
-<p></p>
-In comes <a href="https://pages.github.com/">Github Pages</a>, a free way to host static websites! I’ve wanted to try using it for quite a while, and I’m already quite familiar with Github, having to use it for work.
-<p></p>
-To use it, I’d need a static site generator. The typical choice here is <a href="https://jekyllrb.com/">Jekyll</a>, even being recommend on their own site. I’ve chosen a Haskell alternative called <a href="https://jaspervdj.be/hakyll/">Hakyll</a>, for the simple reason that I like to use Haskell. Getting it up and running was quick; the Hakyll tutorial ends with a nice working blog website with a few placeholder posts. My next step was to translate the <code>ghost</code><!--
---><label for="sn-0" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-0" class="margin-toggle" /><div class="sidenote"><a href="https://web.archive.org/web/20240817152043/https://crtschin.com/">Here’s an archive</a> I could find of my website. I broke everything attempting to update my VPS, so getting a production example wasn’t exactly possible.</div><!--
---> content I’d backed up, to the markdown files Hakyll builds into html using pandoc.
-<p></p>
-After that tedium came the fun part, getting everything exactly as I liked it. I’ll go over noteworthy things I changed or added to my setup, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll. As always, I’m standing on the shoulders of giants.
-<h3 id="styling">Styling</h3>
-<p></p>
-After clunking around in CSS for a bit trying to get a consistent color scheme based on gruvbox, this very <a href="https://jaspervdj.be/hakyll/tutorials/using-clay-with-hakyll.html">short post</a> gave me the idea to use <a href="http://fvisser.nl/clay/">Clay</a> for my styling instead. I didn’t know Clay existed prior, but I definitely liked the idea of using Haskell for everything.
-<p></p>
-Unfortunately, the way described in the blogpost limits it to <a href="https://github.com/commercialhaskell/stack/issues/2627">a single module</a>, which seemed counterproductive to the idea of using a preprocessor in the first place. So instead, I run the script as an executable via cabal. One thing to note, is to fix the dependencies of the created file using <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies"><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.
-<div class="highlight"><pre><span></span><span class="nf">main</span><span class="w"> </span><span class="ow">=</span><span class="w"> </span><span class="n">hakyll</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
-<span class="w">    </span><span class="o">...</span>
-<span class="w">    </span><span class="n">match</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="n">compile</span><span class="w"> </span><span class="n">getResourceBody</span>
-<span class="w">    </span><span class="n">clayDependencies</span><span class="w"> </span><span class="ow">&lt;-</span><span class="w"> </span><span class="n">makePatternDependency</span><span class="w"> </span><span class="s">&quot;css/**.hs&quot;</span>
-<span class="w">    </span><span class="n">rulesExtraDependencies</span><span class="w"> </span><span class="p">[</span><span class="n">clayDependencies</span><span class="p">]</span><span class="w"> </span><span class="o">$</span>
-<span class="w">        </span><span class="n">create</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;css/main.css&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">$</span><span class="w"> </span><span class="kr">do</span>
-<span class="w">            </span><span class="n">route</span><span class="w"> </span><span class="n">idRoute</span>
-<span class="w">            </span><span class="n">compile</span><span class="w"> </span><span class="n">createCssUsingCabal</span>
-</pre></div>
-
-<h3 id="syntax--latex">Syntax &amp; Latex</h3>
-<p></p>
-Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href="https://tony-zorman.com/posts/pygmentising-hakyll.html">blogpost</a>, integrating pygments into a Hakyll blog. I didn’t deviate much from that. I’m not too big of a fan of including the <code>.css</code> file manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.
-<p></p>
-Similarly, I was able to follow <a href="https://tony-zorman.com/posts/katex-with-hakyll.html">this post</a> to use <a href="https://katex.org/">KaTeX</a>.
-<h3 id="sidenotes">Sidenotes</h3>
-<p></p>
-I like to use side notes quite a bit instead of footnotes, as I find it often detracts from the point you’re making, if the reader is compelled to jump to a different section of the page. For sidenotes, there already exists <a href="https://hackage.haskell.org/package/pandoc-sidenote">a package</a> I could reuse after flipping the <a href="https://github.com/jez/pandoc-sidenote/pull/26">html-sidenotes</a> flag that isn’t on hackage yet.
-<p></p>
-Using nix, I just overrode the <code>pandoc-sidenotes</code> version in the overlay that’s used while creating my shell, and it’ll automatically be installed in the shell-provided <code>ghc</code>.
-<div class="highlight"><pre><span></span>makeHaskellOverlay <span class="p">(</span>prev<span class="p">:</span> hfinal<span class="p">:</span> hprev<span class="p">:</span>
-  <span class="p">{</span>
-    <span class="ss">pandoc-sidenote</span> <span class="o">=</span> hprev<span class="o">.</span>callCabal2nixWithOptions <span class="s2">&quot;pandoc-sidenote&quot;</span>
-      <span class="p">(</span><span class="nb">builtins</span><span class="o">.</span>fetchGit <span class="p">{</span>
-        <span class="ss">url</span> <span class="o">=</span> <span class="s2">&quot;https://github.com/jez/pandoc-sidenote&quot;</span><span class="p">;</span>
-        <span class="ss">rev</span> <span class="o">=</span> <span class="s2">&quot;&lt;insert hash here&gt;&quot;</span><span class="p">;</span>
-      <span class="p">})</span>
-      <span class="s2">&quot;-f html-sidenotes&quot;</span>
-      <span class="p">{};</span>
-  <span class="p">}</span>
-<span class="p">)</span>
-</pre></div>
-
-<h3 id="fonts">Fonts</h3>
-<p></p>
-I’m using <a href="https://en.wikipedia.org/wiki/Montserrat_(typeface)">Montserrat</a> for regular ol’ text and <a href="https://github.com/tonsky/FiraCode">Fira Code</a> for typesetting code. I could just use Google’s CDN to host these fonts, but that’s no fun and implies any visitor getting unnecessarily tracked by big boi G. But if I’m self-hosting, I may as well go all out and do some font optimization.
-<p></p>
-I downloaded the variable font <code>.ttf</code> files from <a href="fonts.google.com">Google</a>, and used <a href="https://github.com/vintagedave/Fontimize">fontimize</a> to load in the html documents and optimize each variable font file individually<!--
---><label for="sn-1" class="margin-toggle sidenote-number"></label><input type="checkbox" id="sn-1" class="margin-toggle" /><div class="sidenote">Note that <code>optimise_fonts_for_html_contents</code> circumvents css files. The implication being that fonts are only optimized based on rough information visible in the HTML, instead of full granularity.
-<p></p>
-This means that it is incompatible with the <code>KaTeX</code> font files as those are mainly styled using classes. Perhaps I can get it to work at a future point, but I’d have to toy with Hakyll quite a bit. I’d need to give <code>fontimize</code> the right version of the website, and to use the optimized font files afterwards in the final output.</div><!--
--->. This implies wrangling my nix environment a bit and writing a python script, invoking it via <code>unsafeCompiler</code>.
-<div class="highlight"><pre><span></span><span class="c1"># Optimizing is as simple as calling a single function.</span>
-<span class="n">optimise_fonts_for_html_contents</span><span class="p">(</span>
-    <span class="n">html_contents</span><span class="o">=</span><span class="p">[</span><span class="n">html</span><span class="o">.</span><span class="n">read</span><span class="p">()</span> <span class="k">for</span> <span class="n">html</span> <span class="ow">in</span> <span class="n">html_files</span><span class="p">],</span>
-    <span class="n">fonts</span><span class="o">=</span><span class="n">font_file_paths</span><span class="p">,</span>
-    <span class="n">subsetname</span><span class="o">=</span><span class="s2">&quot;subset&quot;</span><span class="p">,</span>
-    <span class="n">print_stats</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-
-<p></p>
-This makes my fonts dependent on the content of my blog, resizing to fit whatever nonsense I write down. Nifty!
-<h3 id="deployment">Deployment</h3>
-<p></p>
-I was able to riff off of <a href="https://vllmrt.net/spam/hakyll-github-actions-pages.html">this blog post</a> to deploy my blog, which is located in a private repository, to my <a href="https://github.com/crtschin/crtschin.github.io">public pages repo</a>. I changed it to support a minimal build environment via nix as that’s what I use to maintain dependencies. I tried to optimize the Github Action time a bit by including <a href="https://github.com/nix-community/cache-nix-action">nix caching</a>, but also garbage collecting the nix store to keep the caches up to date, and creating a separate build profile from the default shell I use to write this blog.
-<div class="highlight"><pre><span></span><span class="nt">jobs</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">build-deploy</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">nix develop .#minimal -c cabal update</span>
-<span class="w">          </span><span class="no">nix develop .#minimal -c cabal build --only-dependencies site</span>
-<span class="w">          </span><span class="no">nix develop .#minimal -c cabal build site</span>
-<span class="w">          </span><span class="no">nix develop .#minimal -c cabal exec site build</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">nix develop .#minimal --profile /tmp/build-profile</span>
-<span class="w">          </span><span class="no">nix-store --gc</span>
-</pre></div>
-
-<h3 id="misc">Misc</h3>
-<p></p>
-There’re some more nice blogposts I used to add several niceties.
-<ul>
-<li><p></p>
-
-Drafts: I found <a href="https://odone.io/posts/2020-05-25-hakyll-production-drafts/">this blogpost</a> on being able to include drafts in Hakyll.</li>
-<li><p></p>
-
-Feeds: I added both RSS and Atom feeds following <a href="https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html">Robert Pearce’s example</a>.</li>
-<li><p></p>
-
-Formatted Titles: In the base setup, titles are pulled from metadata and inserted into the templates without going to the pandoc transformation. Which means that every character is piped verbatim, no bold, italics, monospace, no anything. Just plain old characters. <a href="https://frasertweedale.github.io/blog-fp/posts/2021-01-11-hakyll-title-formatting.html">This post</a> describes a nice solution, using the first header in the content as the title of the post instead, which does include any formatting conversion done by pandoc.</li>
-<li><p></p>
-
-Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog.
-<p></p>
-
-I didn’t follow any instruction on doing this, but improvising it was simple enough. I just had to ad the latex dependencies to my nix environment and create my resume in a similar fashion to how the syntax highlighting is set up, calling out to <code>latexmk</code> to build my resume file.</li>
-</ul>
-<p></p>
-All-in-all, this was quite fun. Hakyll is very nice to work with. It’s understandably peculiar when building things that have dependencies, such as using <code>rulesExtraDependencies</code> to handle dependencies of files that are created via <a href="https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Compiler.html#v:unsafeCompiler">IO</a>. But getting it all into, what I think is, a nice result was pretty easy and painless.
-    </section>
-</article>
-
-        </main>
-
-        <footer>
-            Site proudly generated by <a href="http://jaspervdj.be/hakyll">Hakyll</a>.
-            All content is licensed under <a href="../LICENSE.txt">3-clause BSD license</a>.
-        </footer>
-    </body>
-</html>
+<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage."><title>(Non-)Functional Ramblings - Better than Revivify</title><style>html{font-size:80%;font-weight:400;font-family:montserrat,arial,sans-serif;scroll-behavior:smooth;scrollbar-gutter:stable}html{text-size-adjust:none}*,*::before,*::after{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;-ms-box-sizing:border-box;-o-box-sizing:border-box;box-sizing:border-box}body{line-height:1.5;-webkit-font-smoothing:antialiased}input,button,textarea,select{font:inherit}p,h1,h2,h3,h4,h5,h6{overflow-wrap:break-word}#root,#__next{isolation:isolate}body{font-size:1.6rem;background-color:#282828;color:#fbf1c7}code,pre{background-color:#1d2021}header{border-bottom:.2rem solid #98971a}nav a{font-weight:700;text-decoration:none}body img{max-width:100%;max-height:100%;display:block;margin:auto;height:auto}body figcaption{text-align:center}footer{margin-top:3rem;padding:1.2rem 0;border-top:.2rem solid #98971a;font-size:1.2rem;color:#fbf1c7}h1{font-size:2.4rem}h2{font-size:2rem}h3{font-size:1.8rem}h4{font-size:1.6rem}.title{margin-bottom:0}article .publish-date{margin:0 0 2rem 1rem;font-size:1.4rem;font-style:italic;color:#fbf1c7}.logo a{font-weight:700;color:#fbf1c7;text-decoration:none}html{scrollbar-width:thick;scrollbar-color:#928374 #282828}pre{scrollbar-width:thin;scrollbar-color:#928374 #282828}nav.toc{float:left;clear:left;font-size:2rem;margin-top:-10%;margin-left:-28%;width:20rem;word-wrap:break-word;padding:1rem;vertical-align:baseline;position:relative}nav.toc a{font-size:1.4rem}nav.toc ::marker{margin:0 -1rem 0 0}nav.toc li{margin:0;padding:0;line-height:1.2}nav.toc .toc-header{font-weight:700}nav.toc ul li{list-style-position:outside}nav.toc ul{margin-top:0;margin-bottom:0}pre,code{font-family:fira code,consolas,monospace}pre{white-space:pre;overflow:auto;margin:1rem 0;background-color:#1d2021;padding:1rem;border-radius:.5rem .5rem .5rem .5rem}code{word-break:break-word;padding:0 .4rem;border-radius:.3rem .3rem .3rem .3rem}html a:link{color:#689d6a;background-color:initial;text-decoration:none}html a:visited{color:#83a598;background-color:initial;text-decoration:none}html a:hover{color:#8ec07c;background-color:initial;text-decoration:none}html a:active{color:#8ec07c;background-color:initial;text-decoration:underline}nav.header a:link{color:#689d6a;background-color:initial;text-decoration:none}nav.header a:visited{color:#689d6a;background-color:initial;text-decoration:none}nav.header a:hover{color:#8ec07c;background-color:initial;text-decoration:none}nav.header a:active{color:#8ec07c;background-color:initial;text-decoration:underline}nav.toc a:link{color:#689d6a;background-color:initial;text-decoration:none}nav.toc a:visited{color:#689d6a;background-color:initial;text-decoration:none}nav.toc a:hover{color:#8ec07c;background-color:initial;text-decoration:none}nav.toc a:active{color:#8ec07c;background-color:initial;text-decoration:underline}.sidenote,marginnote{width:20rem;font-size:1.1rem;line-height:1.3;vertical-align:baseline}body{counter-set:sidenote-counter}.sidenote-number{counter-increment:sidenote-counter}.sidenote:before{content:counter(sidenote-counter)" ";position:relative;vertical-align:baseline;font-weight:700;font-size:1rem;top:-.5rem;font-size:.9em}.sidenote-number:after{content:counter(sidenote-counter);position:relative;vertical-align:baseline;font-weight:700;font-size:1rem;top:-.5rem;left:.1rem}blockquote .sidenote,blockquote .marginnote{margin-right:82%;min-width:59%;text-align:left}.sidenote>code{font-size:1rem}label.sidenote-number{display:inline-block;max-height:2rem}label.margin-toggle:not(.sidenote-number){display:none}input.margin-toggle{display:none}@media all and (max-width:1439px){nav.toc{display:none}}@media all and (max-width:1439px){.sidenote,.marginnote{float:right;text-align:left;margin:1rem 0;padding-left:5%}}@media all and (min-width:1440px){.sidenote,.marginnote{float:right;clear:right;margin-right:-30%;margin-top:.3rem;margin-bottom:0;position:relative}}@media all and (max-width:639px){body{width:100%;margin:0;padding:0 5%}header{margin:1rem 0}nav.header{margin:.5rem auto;text-align:center}footer{text-align:center}nav.header a{font-size:1.4rem;line-height:1.6}.logo{font-size:1.8rem}nav.header a{margin:0 .6rem}}@media all and (min-width:640px){body{width:70rem;margin:0 auto;padding:0}header{margin:0 0 3rem;padding:.6rem 0 .2rem}nav.header{display:flex;align-items:flex-end;justify-content:space-between;margin:0;text-align:right}nav.header a{font-size:1.8rem;margin:0 0 0 .6rem;display:inline}.navigation{justify-content:flex-end}footer{text-align:right}.logo{margin:0;text-align:left;font-size:2.4rem}}pre{line-height:125%}td.linenos .normal{color:#3c4354;background-color:initial;padding-left:5px;padding-right:5px}span.linenos{color:#3c4354;background-color:initial;padding-left:5px;padding-right:5px}td.linenos .special{color:#3c4354;background-color:#ffffc0;padding-left:5px;padding-right:5px}span.linenos.special{color:#3c4354;background-color:#ffffc0;padding-left:5px;padding-right:5px}.hll{background-color:#6e7681}.c{color:#7e8aa1}.err{color:#f88f7f}.esc{color:#d4d2c8}.g{color:#d4d2c8}.k{color:#ffad66}.l{color:#d5ff80}.n{color:#d4d2c8}.o{color:#ffad66}.x{color:#d4d2c8}.p{color:#d4d2c8}.ch{color:#f88f7f;font-style:italic}.cm{color:#7e8aa1}.cp{color:#ffad66;font-weight:700}.cpf{color:#7e8aa1}.c1{color:#7e8aa1}.cs{color:#7e8aa1;font-style:italic}.gd{color:#f88f7f;background-color:#3d1e20}.ge{color:#d4d2c8;font-style:italic}.ges{color:#d4d2c8}.gr{color:#f88f7f}.gh{color:#d4d2c8}.gi{color:#6ad4af;background-color:#19362c}.go{color:#7e8aa1}.gp{color:#d4d2c8}.gs{color:#d4d2c8;font-weight:700}.gu{color:#d4d2c8}.gt{color:#f88f7f}.kc{color:#ffad66}.kd{color:#ffad66}.kn{color:#ffad66}.kp{color:#ffad66}.kr{color:#ffad66}.kt{color:#73d0ff}.ld{color:#d5ff80}.m{color:#dfbfff}.s{color:#d5ff80}.na{color:#ffd173}.nb{color:#ffd173}.nc{color:#73d0ff}.no{color:#ffd173}.nd{color:#7e8aa1;font-weight:700;font-style:italic}.ni{color:#95e6cb}.ne{color:#73d0ff}.nf{color:#ffd173}.nl{color:#d4d2c8}.nn{color:#d4d2c8}.nx{color:#d4d2c8}.py{color:#ffd173}.nt{color:#5ccfe6}.nv{color:#d4d2c8}.ow{color:#ffad66}.pm{color:#d4d2c8}.w{color:#d4d2c8}.mb{color:#dfbfff}.mf{color:#dfbfff}.mh{color:#dfbfff}.mi{color:#dfbfff}.mo{color:#dfbfff}.sa{color:#f29e74}.sb{color:#d5ff80}.sc{color:#d5ff80}.dl{color:#d5ff80}.sd{color:#7e8aa1}.s2{color:#d5ff80}.se{color:#95e6cb}.sh{color:#d5ff80}.si{color:#95e6cb}.sx{color:#95e6cb}.sr{color:#95e6cb}.s1{color:#d5ff80}.ss{color:#dfbfff}.bp{color:#5ccfe6}.fm{color:#ffd173}.vc{color:#d4d2c8}.vg{color:#d4d2c8}.vi{color:#d4d2c8}.vm{color:#d4d2c8}.il{color:#dfbfff}@font-face{font-family:fira code;font-style:normal;font-weight:300 700;font-display:swap;src:local("Fira Code"),local("FiraCode"),url(/css/fonts/FiraCode-VariableFont_wght.woff2)format('woff2-variations')}@font-face{font-family:montserrat;font-style:normal;font-weight:100 900;font-display:swap;src:local("Montserrat"),url(/css/fonts/Montserrat-VariableFont_wght.woff2)format('woff2-variations')}@font-face{font-family:montserrat;font-style:italic;font-weight:100 900;font-display:swap;src:local("Montserrat Italic"),local("Montserrat-Italic"),url(/css/fonts/Montserrat-Italic-VariableFont_wght.woff2)format('woff2-variations')}</style><link rel=stylesheet href=../css/katex.css media=print onload='this.media="all"'><noscript><link rel=stylesheet href=../css/katex.css></noscript><link rel="shortcut icon" href=favicon.ico type=image/x-icon><link rel="shortcut icon" href=../images/favicons/favicon32.png><link rel=apple-touch-icon-precomposed sizes=144x144 href=../images/favicons/favicon144.png><link rel=apple-touch-icon-precomposed sizes=114x114 href=../images/favicons/favicon114.png><link rel=apple-touch-icon-precomposed sizes=72x72 href=../images/favicons/favicon72.png><link rel=apple-touch-icon-precomposed sizes=57x57 href=../images/favicons/favicon57.png><header><nav class=header><a class=logo href=../>(Non-)Functional Ramblings</a><div class=navigation><a href=../about.html>About</a>
+<a href=../static/resume.pdf>Resume</a>
+<a href=../archive.html>Archive</a>
+<a href=../atom.xml>Feed</a></div></nav></header><main role=main><h1 class=title>Better than Revivify</h1><article><section class=publish-date>Posted on September 24, 2024</section><section><nav class=toc><div class=toc-header>Contents</div><ul><li><a href=#update id=toc-update>Update?</a><li><a href=#but-what-if-i-didnt id=toc-but-what-if-i-didnt>But What if I Didn’t?</a><ul><li><a href=#styling id=toc-styling>Styling</a><li><a href=#syntax--latex id=toc-syntax--latex>Syntax & Latex</a><li><a href=#sidenotes id=toc-sidenotes>Sidenotes</a><li><a href=#fonts id=toc-fonts>Fonts</a><li><a href=#deployment id=toc-deployment>Deployment</a><li><a href=#misc id=toc-misc>Misc</a></ul></ul></nav><p></p>I hadn’t really touched my blog/website for years. At the time, I used it to learn somethings about webhosting. I’d unfortunately lost much of the spark to do hobby programming after starting to work fulltime, leading to my last post being from <a href=./2020-09-18-roly-oly-polyvariadic-boogaloo.html>2020</a>, prior to me even graduating university.<h2 id=update>Update?</h2><p></p>I have some free time right now and I’ve have some ideas for blog posts I hadn’t gone around to. So why not jot them down and update my blog a bit? Well… I didn’t set up any automated updates, nor had I touched my blog in years, then built with <a href=https://ghost.org/><code>ghost</code></a>. Even worse, it wasn’t just <code>ghost</code> that needed to be updated. I was looking at multiple updates that needed to be done, with <code>Ubuntu</code>, <code>ghost</code> and <code>nodejs</code> all sitting at incompatible outdated versions. I’d have to do the updates in some ordering I am way to unfamiliar to determine.<p></p>I tried for a bit, but after some hair pulling, I thought: “Why not just recreate this trash completely?”. I wasn’t too happy with <code>ghost</code> anyway, it was way too overkill for my purposes, I didn’t need subscribers or mailing lists. Just a static site with some words on it, perhaps with some styling and some files I could host.<h2 id=but-what-if-i-didnt>But What if I Didn’t?</h2><p></p>In comes <a href=https://pages.github.com/>Github Pages</a>, a free way to host static websites! I’ve wanted to try using it for quite a while, and I’m already quite familiar with Github, having to use it for work.<p></p>To use it, I’d need a static site generator. The typical choice here is <a href=https://jekyllrb.com/>Jekyll</a>, even being recommend on their own site. I’ve chosen a Haskell alternative called <a href=https://jaspervdj.be/hakyll/>Hakyll</a>, for the simple reason that I like to use Haskell. Getting it up and running was quick; the Hakyll tutorial ends with a nice working blog website with a few placeholder posts. My next step was to translate the <code>ghost</code><label for=sn-0 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-0 class=margin-toggle><div class=sidenote><a href=https://web.archive.org/web/20240817152043/https://crtschin.com/>Here’s an archive</a> I could find of my website. I broke everything attempting to update my VPS, so getting a production example wasn’t exactly possible.</div>content I’d backed up, to the markdown files Hakyll builds into html using pandoc.<p></p>After that tedium came the fun part, getting everything exactly as I liked it. I’ll go over noteworthy things I changed or added to my setup, and how I did it. A lot of existing blogposts exist on integrating features into Hakyll. As always, I’m standing on the shoulders of giants.<h3 id=styling>Styling</h3><p></p>After clunking around in CSS for a bit trying to get a consistent color scheme based on gruvbox, this very <a href=https://jaspervdj.be/hakyll/tutorials/using-clay-with-hakyll.html>short post</a> gave me the idea to use <a href=http://fvisser.nl/clay/>Clay</a> for my styling instead. I didn’t know Clay existed prior, but I definitely liked the idea of using Haskell for everything.<p></p>Unfortunately, the way described in the blogpost limits it to <a href=https://github.com/commercialhaskell/stack/issues/2627>a single module</a>, which seemed counterproductive to the idea of using a preprocessor in the first place. So instead, I run the script as an executable via cabal. One thing to note, is to fix the dependencies of the created file using <a href=https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Rules.html#v:rulesExtraDependencies><code>rulesExtraDependencies</code></a>, so it is recreated on a change to any of the underlying modules. I’m using the following pattern quite often to avoid unnecessary/missed recompilation.<div class=highlight><pre><span></span><span class=nf>main</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=n>hakyll</span><span class=w> </span><span class=o>$</span><span class=w> </span><span class=kr>do</span>
+<span class=w>    </span><span class=o>...</span>
+<span class=w>    </span><span class=n>match</span><span class=w> </span><span class=s>&quot;css/**.hs&quot;</span><span class=w> </span><span class=o>$</span><span class=w> </span><span class=n>compile</span><span class=w> </span><span class=n>getResourceBody</span>
+<span class=w>    </span><span class=n>clayDependencies</span><span class=w> </span><span class=ow>&lt;-</span><span class=w> </span><span class=n>makePatternDependency</span><span class=w> </span><span class=s>&quot;css/**.hs&quot;</span>
+<span class=w>    </span><span class=n>rulesExtraDependencies</span><span class=w> </span><span class=p>[</span><span class=n>clayDependencies</span><span class=p>]</span><span class=w> </span><span class=o>$</span>
+<span class=w>        </span><span class=n>create</span><span class=w> </span><span class=p>[</span><span class=s>&quot;css/main.css&quot;</span><span class=p>]</span><span class=w> </span><span class=o>$</span><span class=w> </span><span class=kr>do</span>
+<span class=w>            </span><span class=n>route</span><span class=w> </span><span class=n>idRoute</span>
+<span class=w>            </span><span class=n>compile</span><span class=w> </span><span class=n>createCssUsingCabal</span>
+</pre></div><h3 id=syntax--latex>Syntax & Latex</h3><p></p>Can’t have a techblog without snippets of code right? Luckily, Tony Zorman wrote a nice <a href=https://tony-zorman.com/posts/pygmentising-hakyll.html>blogpost</a>, integrating pygments into a Hakyll blog. I didn’t deviate much from that. I’m not too big of a fan of including the <code>.css</code> file manually, as I already have the above pipeline working nicely. But recreating the pygments syntax coloring files would require me understanding the way it tags tokens, and I can’t be bothered.<p></p>Similarly, I was able to follow <a href=https://tony-zorman.com/posts/katex-with-hakyll.html>this post</a> to use <a href=https://katex.org/>KaTeX</a>.<h3 id=sidenotes>Sidenotes</h3><p></p>I like to use side notes quite a bit instead of footnotes, as I find it often detracts from the point you’re making, if the reader is compelled to jump to a different section of the page. For sidenotes, there already exists <a href=https://hackage.haskell.org/package/pandoc-sidenote>a package</a> I could reuse after flipping the <a href=https://github.com/jez/pandoc-sidenote/pull/26>html-sidenotes</a> flag that isn’t on hackage yet.<p></p>Using nix, I just overrode the <code>pandoc-sidenotes</code> version in the overlay that’s used while creating my shell, and it’ll automatically be installed in the shell-provided <code>ghc</code>.<div class=highlight><pre><span></span>makeHaskellOverlay <span class=p>(</span>prev<span class=p>:</span> hfinal<span class=p>:</span> hprev<span class=p>:</span>
+  <span class=p>{</span>
+    <span class=ss>pandoc-sidenote</span> <span class=o>=</span> hprev<span class=o>.</span>callCabal2nixWithOptions <span class=s2>&quot;pandoc-sidenote&quot;</span>
+      <span class=p>(</span><span class=nb>builtins</span><span class=o>.</span>fetchGit <span class=p>{</span>
+        <span class=ss>url</span> <span class=o>=</span> <span class=s2>&quot;https://github.com/jez/pandoc-sidenote&quot;</span><span class=p>;</span>
+        <span class=ss>rev</span> <span class=o>=</span> <span class=s2>&quot;&lt;insert hash here&gt;&quot;</span><span class=p>;</span>
+      <span class=p>})</span>
+      <span class=s2>&quot;-f html-sidenotes&quot;</span>
+      <span class=p>{};</span>
+  <span class=p>}</span>
+<span class=p>)</span>
+</pre></div><h3 id=fonts>Fonts</h3><p></p>I’m using <a href=https://en.wikipedia.org/wiki/Montserrat_(typeface)>Montserrat</a> for regular ol’ text and <a href=https://github.com/tonsky/FiraCode>Fira Code</a> for typesetting code. I could just use Google’s CDN to host these fonts, but that’s no fun and implies any visitor getting unnecessarily tracked by big boi G. But if I’m self-hosting, I may as well go all out and do some font optimization.<p></p>I downloaded the variable font <code>.ttf</code> files from <a href=fonts.google.com>Google</a>, and used <a href=https://github.com/vintagedave/Fontimize>fontimize</a> to load in the html documents and optimize each variable font file individually<label for=sn-1 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-1 class=margin-toggle><div class=sidenote>Note that <code>optimise_fonts_for_html_contents</code> circumvents css files. The implication being that fonts are only optimized based on rough information visible in the HTML, instead of full granularity.<p></p>This means that it is incompatible with the <code>KaTeX</code> font files as those are mainly styled using classes. Perhaps I can get it to work at a future point, but I’d have to toy with Hakyll quite a bit. I’d need to give <code>fontimize</code> the right version of the website, and to use the optimized font files afterwards in the final output.</div>. This implies wrangling my nix environment a bit and writing a python script, invoking it via <code>unsafeCompiler</code>.<div class=highlight><pre><span></span><span class=c1># Optimizing is as simple as calling a single function.</span>
+<span class=n>optimise_fonts_for_html_contents</span><span class=p>(</span>
+    <span class=n>html_contents</span><span class=o>=</span><span class=p>[</span><span class=n>html</span><span class=o>.</span><span class=n>read</span><span class=p>()</span> <span class=k>for</span> <span class=n>html</span> <span class=ow>in</span> <span class=n>html_files</span><span class=p>],</span>
+    <span class=n>fonts</span><span class=o>=</span><span class=n>font_file_paths</span><span class=p>,</span>
+    <span class=n>subsetname</span><span class=o>=</span><span class=s2>&quot;subset&quot;</span><span class=p>,</span>
+    <span class=n>print_stats</span><span class=o>=</span><span class=kc>False</span><span class=p>,</span>
+<span class=p>)</span>
+</pre></div><p></p>This makes my fonts dependent on the content of my blog, resizing to fit whatever nonsense I write down. Nifty!<h3 id=deployment>Deployment</h3><p></p>I was able to riff off of <a href=https://vllmrt.net/spam/hakyll-github-actions-pages.html>this blog post</a> to deploy my blog, which is located in a private repository, to my <a href=https://github.com/crtschin/crtschin.github.io>public pages repo</a>. I changed it to support a minimal build environment via nix as that’s what I use to maintain dependencies. I tried to optimize the Github Action time a bit by including <a href=https://github.com/nix-community/cache-nix-action>nix caching</a>, but also garbage collecting the nix store to keep the caches up to date, and creating a separate build profile from the default shell I use to write this blog.<div class=highlight><pre><span></span><span class=nt>jobs</span><span class=p>:</span>
+<span class=w>  </span><span class=nt>build-deploy</span><span class=p>:</span>
+<span class=w>    </span><span class=nt>steps</span><span class=p>:</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class="p p-Indicator">|</span>
+<span class=w>          </span><span class=no>nix develop .#minimal -c cabal update</span>
+<span class=w>          </span><span class=no>nix develop .#minimal -c cabal build --only-dependencies site</span>
+<span class=w>          </span><span class=no>nix develop .#minimal -c cabal build site</span>
+<span class=w>          </span><span class=no>nix develop .#minimal -c cabal exec site build</span>
+<span class=w>      </span><span class="p p-Indicator">-</span><span class=w> </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class="p p-Indicator">|</span>
+<span class=w>          </span><span class=no>nix develop .#minimal --profile /tmp/build-profile</span>
+<span class=w>          </span><span class=no>nix-store --gc</span>
+</pre></div><h3 id=misc>Misc</h3><p></p>There’re some more nice blogposts I used to add several niceties.<ul><li><p></p>Drafts: I found <a href=https://odone.io/posts/2020-05-25-hakyll-production-drafts/>this blogpost</a> on being able to include drafts in Hakyll.<li><p></p>Feeds: I added both RSS and Atom feeds following <a href=https://robertwpearce.com/hakyll-pt-3-generating-rss-and-atom-xml-feeds.html>Robert Pearce’s example</a>.<li><p></p>Formatted Titles: In the base setup, titles are pulled from metadata and inserted into the templates without going to the pandoc transformation. Which means that every character is piped verbatim, no bold, italics, monospace, no anything. Just plain old characters. <a href=https://frasertweedale.github.io/blog-fp/posts/2021-01-11-hakyll-title-formatting.html>This post</a> describes a nice solution, using the first header in the content as the title of the post instead, which does include any formatting conversion done by pandoc.<li><p></p>Resume: I’ve been impromptu maintaining my resume in a separate location and copying the built file over, but I may as well build it on the fly as part of this blog.<p></p>I didn’t follow any instruction on doing this, but improvising it was simple enough. I just had to ad the latex dependencies to my nix environment and create my resume in a similar fashion to how the syntax highlighting is set up, calling out to <code>latexmk</code> to build my resume file.</ul><p></p>All-in-all, this was quite fun. Hakyll is very nice to work with. It’s understandably peculiar when building things that have dependencies, such as using <code>rulesExtraDependencies</code> to handle dependencies of files that are created via <a href=https://hackage.haskell.org/package/hakyll-4.16.2.2/docs/Hakyll-Core-Compiler.html#v:unsafeCompiler>IO</a>. But getting it all into, what I think is, a nice result was pretty easy and painless.</section></article></main><footer>Site proudly generated by <a href=http://jaspervdj.be/hakyll>Hakyll</a>.
+All content is licensed under <a href=../LICENSE.txt>3-clause BSD license</a>.</footer>
