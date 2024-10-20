@@ -7,8 +7,24 @@
         <description><![CDATA[A blog maintained by some guy that likes functional programming.]]></description>
         <atom:link href="https://crtschin.com/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Tue, 24 Sep 2024 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sun, 20 Oct 2024 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Harder-Coded: Simple Newtypes Are for Scrubs</title>
+    <link>https://crtschin.com/posts/harder-coded-newtypes.html</link>
+    <description><![CDATA[Newtypes are generally useful to avoid parameter-blindness, but can be cumbersome if each type has it's own wrapper. I explore the use of TypeData and phantom types in Haskell as an alternative way to improve type safety and reduce developer errors.]]></description>
+    <pubDate>Sun, 20 Oct 2024 00:00:00 UT</pubDate>
+    <guid>https://crtschin.com/posts/harder-coded-newtypes.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
+    <title>Lazy-ing in My Pool</title>
+    <link>https://crtschin.com/posts/lazying-in-my-pool.html</link>
+    <description><![CDATA[This blog post discusses the implementation of a lazy initialization strategy for managing a pool of resources. Emphasizing the importance of deferring initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></description>
+    <pubDate>Sun, 06 Oct 2024 00:00:00 UT</pubDate>
+    <guid>https://crtschin.com/posts/lazying-in-my-pool.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
     <title>Better than Revivify</title>
     <link>https://crtschin.com/posts/better-than-revivify.html</link>
     <description><![CDATA[This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></description>
