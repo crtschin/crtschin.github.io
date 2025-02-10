@@ -9,7 +9,7 @@
                    type="application/rss+xml" />
         <lastBuildDate>Sun, 20 Oct 2024 00:00:00 UT</lastBuildDate>
         <item>
-    <title>Harder-Coded: Simple Newtypes are for Scrubs</title>
+    <title>Harder-Coded Newtypes</title>
     <link>https://crtschin.com/posts/harder-coded-newtypes.html</link>
     <description><![CDATA[Newtypes are generally useful to avoid parameter-blindness, but can be cumbersome if each type has it's own wrapper. I explore the use of TypeData and phantom types in Haskell as an alternative way to improve type safety and reduce developer errors.]]></description>
     <pubDate>Sun, 20 Oct 2024 00:00:00 UT</pubDate>
