@@ -16,6 +16,11 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://crtschin.com/posts/were-all-champs-on-the-inside.html</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://crtschin.com/posts/harder-coded-newtypes.html</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
