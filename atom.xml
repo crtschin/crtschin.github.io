@@ -10,13 +10,13 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2025-03-24T00:00:00Z</updated>
+    <updated>2025-03-31T00:00:00Z</updated>
     <entry>
     <title>We’re All CHAMPs On The Inside</title>
     <link href="https://crtschin.com/posts/were-all-champs-on-the-inside.html" />
     <id>https://crtschin.com/posts/were-all-champs-on-the-inside.html</id>
-    <published>2025-03-24T00:00:00Z</published>
-    <updated>2025-03-24T00:00:00Z</updated>
+    <published>2025-03-31T00:00:00Z</published>
+    <updated>2025-03-31T00:00:00Z</updated>
     <summary type="html"><![CDATA[HAMT's are cool, Haskell has a ubiquitous one in unordered-containers. But other languages have the even cooler CHAMPs. This post is about optimizing the filter-ish functions in an attempt at a drop-in replacement that uses CHAMPs.]]></summary>
 </entry>
 <entry>

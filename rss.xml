@@ -7,12 +7,12 @@
         <description><![CDATA[A blog maintained by some guy that likes functional programming.]]></description>
         <atom:link href="https://crtschin.com/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 24 Mar 2025 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Mon, 31 Mar 2025 00:00:00 UT</lastBuildDate>
         <item>
     <title>We’re All CHAMPs On The Inside</title>
     <link>https://crtschin.com/posts/were-all-champs-on-the-inside.html</link>
     <description><![CDATA[HAMT's are cool, Haskell has a ubiquitous one in unordered-containers. But other languages have the even cooler CHAMPs. This post is about optimizing the filter-ish functions in an attempt at a drop-in replacement that uses CHAMPs.]]></description>
-    <pubDate>Mon, 24 Mar 2025 00:00:00 UT</pubDate>
+    <pubDate>Mon, 31 Mar 2025 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/were-all-champs-on-the-inside.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
