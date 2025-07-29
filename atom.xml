@@ -10,19 +10,11 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2025-07-13T00:00:00Z</updated>
+    <updated>2025-04-30T00:00:00Z</updated>
     <entry>
-    <title>Functional programmers enter a diner…</title>
-    <link href="https://crtschin.com/drafts/functional-programmers-enter-a-diner.html" />
-    <id>https://crtschin.com/drafts/functional-programmers-enter-a-diner.html</id>
-    <published>2025-07-13T00:00:00Z</published>
-    <updated>2025-07-13T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This post explores preventing concurrency deadlocks in Haskell by enforcing a fixed, predefined order for acquiring MVar locks. It details an interface that ensures safe, multi-threaded access to shared state components.]]></summary>
-</entry>
-<entry>
     <title>Can I pet your DAG?</title>
-    <link href="https://crtschin.com/drafts/can-i-pet-your-dag.html" />
-    <id>https://crtschin.com/drafts/can-i-pet-your-dag.html</id>
+    <link href="https://crtschin.com/posts/can-i-pet-your-dag.html" />
+    <id>https://crtschin.com/posts/can-i-pet-your-dag.html</id>
     <published>2025-04-30T00:00:00Z</published>
     <updated>2025-04-30T00:00:00Z</updated>
     <summary type="html"><![CDATA[Haskell's ordered maps are fun tools to have in any arsenal. In this post I give an example on doing dependency resolution quickly using the partially ordered nature of dependency relations, using an extremely contrived example.]]></summary>
@@ -90,6 +82,14 @@
     <published>2019-02-15T00:00:00Z</published>
     <updated>2019-02-15T00:00:00Z</updated>
     <summary type="html"><![CDATA[I discuss populating a database with generated data, resulting in a simple solution that generates objects sequentially, following a topological sort to ensure dependency preservation.]]></summary>
+</entry>
+<entry>
+    <title>Cat… amarphisms</title>
+    <link href="https://crtschin.com/posts/cat-amorphisms.html" />
+    <id>https://crtschin.com/posts/cat-amorphisms.html</id>
+    <published>2018-04-15T00:00:00Z</published>
+    <updated>2018-04-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Briefly explore the concept of catamorphisms in functional programming, primarily focusing on their application to algebraic data types, such as binary trees.]]></summary>
 </entry>
 
 </feed>
