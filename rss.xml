@@ -7,8 +7,16 @@
         <description><![CDATA[A blog maintained by some guy that likes functional programming.]]></description>
         <atom:link href="https://crtschin.com/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Tue, 29 Jul 2025 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 27 Sep 2025 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Human-editor interfaces</title>
+    <link>https://crtschin.com/posts/human-editor-interfaces.html</link>
+    <description><![CDATA[A rambling of thoughts and my experience up till now with text editors.]]></description>
+    <pubDate>Sat, 27 Sep 2025 00:00:00 UT</pubDate>
+    <guid>https://crtschin.com/posts/human-editor-interfaces.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
     <title>Can I pet your DAG?</title>
     <link>https://crtschin.com/posts/can-i-pet-your-dag.html</link>
     <description><![CDATA[Haskell's ordered maps are fun tools to have in any arsenal. In this post I give an example on doing dependency resolution quickly using the partially ordered nature of dependency relations, using an extremely contrived example.]]></description>
@@ -78,14 +86,6 @@
     <description><![CDATA[I discuss populating a database with generated data, resulting in a simple solution that generates objects sequentially, following a topological sort to ensure dependency preservation.]]></description>
     <pubDate>Fri, 15 Feb 2019 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/flooding-my-base.html</guid>
-    <dc:creator>Curtis Chin Jen Sem</dc:creator>
-</item>
-<item>
-    <title>Cat… amarphisms</title>
-    <link>https://crtschin.com/posts/cat-amorphisms.html</link>
-    <description><![CDATA[Briefly explore the concept of catamorphisms in functional programming, primarily focusing on their application to algebraic data types, such as binary trees.]]></description>
-    <pubDate>Sun, 15 Apr 2018 00:00:00 UT</pubDate>
-    <guid>https://crtschin.com/posts/cat-amorphisms.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 
