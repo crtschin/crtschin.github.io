@@ -43,7 +43,7 @@
 <item>
     <title>Lazy-ing in My Pool</title>
     <link>https://crtschin.com/posts/lazying-in-my-pool.html</link>
-    <description><![CDATA[This blog post discusses the implementation of a lazy initialization strategy for managing a pool of resources. Emphasizing the importance of deferring initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></description>
+    <description><![CDATA[Laziness is underrated. Here I lay out a lazy initialization strategy for managing a pool of resources. It is beneficial to defer initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></description>
     <pubDate>Sun, 06 Oct 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/lazying-in-my-pool.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
@@ -51,7 +51,7 @@
 <item>
     <title>Better than Revivify</title>
     <link>https://crtschin.com/posts/better-than-revivify.html</link>
-    <description><![CDATA[This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></description>
+    <description><![CDATA[I lay out my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></description>
     <pubDate>Tue, 24 Sep 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/better-than-revivify.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
@@ -59,7 +59,7 @@
 <item>
     <title>What’s in the Name?</title>
     <link>https://crtschin.com/posts/all-about-representations.html</link>
-    <description><![CDATA[This blog post explores different approaches to implementing a lambda calculus interpreter. It examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></description>
+    <description><![CDATA[One of the first things functional programmers do is implement a lambda calculus interpreter. This post examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></description>
     <pubDate>Fri, 20 Sep 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/all-about-representations.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
@@ -67,7 +67,7 @@
 <item>
     <title>Roly, Oly, …, Polyvariadic Boogaloo</title>
     <link>https://crtschin.com/posts/roly-oly-polyvariadic-boogaloo.html</link>
-    <description><![CDATA[In the blog post, I author revisits the topic of polyvariadic functions in Haskell, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></description>
+    <description><![CDATA[I revisit the topic of polyvariadic functions, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></description>
     <pubDate>Fri, 18 Sep 2020 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/roly-oly-polyvariadic-boogaloo.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
@@ -75,7 +75,7 @@
 <item>
     <title>Roly, Oly, …, Polyvariadic</title>
     <link>https://crtschin.com/posts/roly-oly-polyvariadic.html</link>
-    <description><![CDATA[This blog post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></description>
+    <description><![CDATA[This introductory post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></description>
     <pubDate>Sat, 06 Jul 2019 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/roly-oly-polyvariadic.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>

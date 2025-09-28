@@ -49,7 +49,7 @@
     <id>https://crtschin.com/posts/lazying-in-my-pool.html</id>
     <published>2024-10-06T00:00:00Z</published>
     <updated>2024-10-06T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This blog post discusses the implementation of a lazy initialization strategy for managing a pool of resources. Emphasizing the importance of deferring initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></summary>
+    <summary type="html"><![CDATA[Laziness is underrated. Here I lay out a lazy initialization strategy for managing a pool of resources. It is beneficial to defer initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></summary>
 </entry>
 <entry>
     <title>Better than Revivify</title>
@@ -57,7 +57,7 @@
     <id>https://crtschin.com/posts/better-than-revivify.html</id>
     <published>2024-09-24T00:00:00Z</published>
     <updated>2024-09-24T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This blog post discusses my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></summary>
+    <summary type="html"><![CDATA[I lay out my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></summary>
 </entry>
 <entry>
     <title>What’s in the Name?</title>
@@ -65,7 +65,7 @@
     <id>https://crtschin.com/posts/all-about-representations.html</id>
     <published>2024-09-20T00:00:00Z</published>
     <updated>2024-09-20T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This blog post explores different approaches to implementing a lambda calculus interpreter. It examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></summary>
+    <summary type="html"><![CDATA[One of the first things functional programmers do is implement a lambda calculus interpreter. This post examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></summary>
 </entry>
 <entry>
     <title>Roly, Oly, …, Polyvariadic Boogaloo</title>
@@ -73,7 +73,7 @@
     <id>https://crtschin.com/posts/roly-oly-polyvariadic-boogaloo.html</id>
     <published>2020-09-18T00:00:00Z</published>
     <updated>2020-09-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[In the blog post, I author revisits the topic of polyvariadic functions in Haskell, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></summary>
+    <summary type="html"><![CDATA[I revisit the topic of polyvariadic functions, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></summary>
 </entry>
 <entry>
     <title>Roly, Oly, …, Polyvariadic</title>
@@ -81,7 +81,7 @@
     <id>https://crtschin.com/posts/roly-oly-polyvariadic.html</id>
     <published>2019-07-06T00:00:00Z</published>
     <updated>2019-07-06T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This blog post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></summary>
+    <summary type="html"><![CDATA[This introductory post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></summary>
 </entry>
 <entry>
     <title>Flooding my ’base</title>
