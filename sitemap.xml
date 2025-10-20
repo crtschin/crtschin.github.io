@@ -16,6 +16,11 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://crtschin.com/posts/functional-programmers-enter-a-diner.html</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://crtschin.com/posts/human-editor-interfaces.html</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
