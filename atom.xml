@@ -10,8 +10,16 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2025-10-20T00:00:00Z</updated>
+    <updated>2025-12-19T00:00:00Z</updated>
     <entry>
+    <title>Tastier Options</title>
+    <link href="https://crtschin.com/posts/tastier-options.html" />
+    <id>https://crtschin.com/posts/tastier-options.html</id>
+    <published>2025-12-19T00:00:00Z</published>
+    <updated>2025-12-19T00:00:00Z</updated>
+    <summary type="html"><![CDATA[An exercise in parameterizing tasty test-suites using the CLI.]]></summary>
+</entry>
+<entry>
     <title>Functional programmers enter a diner…</title>
     <link href="https://crtschin.com/posts/functional-programmers-enter-a-diner.html" />
     <id>https://crtschin.com/posts/functional-programmers-enter-a-diner.html</id>
@@ -82,14 +90,6 @@
     <published>2020-09-18T00:00:00Z</published>
     <updated>2020-09-18T00:00:00Z</updated>
     <summary type="html"><![CDATA[I revisit the topic of polyvariadic functions, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></summary>
-</entry>
-<entry>
-    <title>Roly, Oly, …, Polyvariadic</title>
-    <link href="https://crtschin.com/posts/roly-oly-polyvariadic.html" />
-    <id>https://crtschin.com/posts/roly-oly-polyvariadic.html</id>
-    <published>2019-07-06T00:00:00Z</published>
-    <updated>2019-07-06T00:00:00Z</updated>
-    <summary type="html"><![CDATA[This introductory post illustrates the concept of polyvariadic functions, using the example of a function that can sum an arbitrary number of integers or return another function.]]></summary>
 </entry>
 
 </feed>
