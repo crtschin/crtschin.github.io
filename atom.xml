@@ -10,8 +10,16 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2025-12-19T00:00:00Z</updated>
+    <updated>2025-12-26T00:00:00Z</updated>
     <entry>
+    <title>Wait, this isn’t Haskell…</title>
+    <link href="https://crtschin.com/posts/wait-this-isnt-haskell.html" />
+    <id>https://crtschin.com/posts/wait-this-isnt-haskell.html</id>
+    <published>2025-12-26T00:00:00Z</published>
+    <updated>2025-12-26T00:00:00Z</updated>
+    <summary type="html"><![CDATA[First step in my adventure in writing a library over libcurl, using hs-bindgen.]]></summary>
+</entry>
+<entry>
     <title>Tastier Options</title>
     <link href="https://crtschin.com/posts/tastier-options.html" />
     <id>https://crtschin.com/posts/tastier-options.html</id>
@@ -82,14 +90,6 @@
     <published>2024-09-20T00:00:00Z</published>
     <updated>2024-09-20T00:00:00Z</updated>
     <summary type="html"><![CDATA[One of the first things functional programmers do is implement a lambda calculus interpreter. This post examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></summary>
-</entry>
-<entry>
-    <title>Roly, Oly, …, Polyvariadic Boogaloo</title>
-    <link href="https://crtschin.com/posts/roly-oly-polyvariadic-boogaloo.html" />
-    <id>https://crtschin.com/posts/roly-oly-polyvariadic-boogaloo.html</id>
-    <published>2020-09-18T00:00:00Z</published>
-    <updated>2020-09-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[I revisit the topic of polyvariadic functions, building on a previous attempt by introducing type families to create a more streamlined implementation.]]></summary>
 </entry>
 
 </feed>

@@ -1,0 +1,142 @@
+<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="First step in my adventure in writing a library over libcurl, using hs-bindgen."><title>(Non-)Functional Ramblings - Wait, this isn’t Haskell…</title><style>@font-face{font-family:fira code;font-style:normal;font-weight:300 700;font-display:swap;src:local("Fira Code"),local("FiraCode"),url(/css/fonts/FiraCode-ee4ee6a.woff2)format('woff2-variations')}@font-face{font-family:montserrat;font-style:normal;font-weight:100 900;font-display:swap;src:local("Montserrat"),url(/css/fonts/Montserrat-ee4ee6a.woff2)format('woff2-variations')}@font-face{font-family:montserrat;font-style:italic;font-weight:100 900;font-display:swap;src:local("Montserrat Italic"),local("Montserrat-Italic"),url(/css/fonts/Montserrat-Italic-ee4ee6a.woff2)format('woff2-variations')}html{font-size:80%;font-weight:400;font-family:montserrat,arial,sans-serif;scroll-behavior:smooth;scrollbar-gutter:stable}html{text-size-adjust:none}*,*::before,*::after{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;-ms-box-sizing:border-box;-o-box-sizing:border-box;box-sizing:border-box}body{line-height:1.5;-webkit-font-smoothing:antialiased}input,button,textarea,select{font:inherit}p,h1,h2,h3,h4,h5,h6{overflow-wrap:break-word}#root,#__next{isolation:isolate}body{font-size:1.6rem;background-color:#282828;color:#fbf1c7}code,pre{background-color:#1d2021}header{border-bottom:.2rem solid #98971a}nav a{font-weight:700;text-decoration:none}body img{max-width:100%;max-height:100%;display:block;margin:auto;height:auto;width:auto}body figcaption{text-align:center}footer{margin-top:3rem;padding:1.2rem 0;border-top:.2rem solid #98971a;font-size:1.2rem;color:#fbf1c7}h1{font-size:2.4rem}h2{font-size:2rem}h3{font-size:1.8rem}h4{font-size:1.6rem}.title{margin-bottom:0}article .publish-date{margin:0 0 2rem 1rem;font-size:1.4rem;color:#fbf1c7}article .last-modified-date{font-size:1rem}.logo a{font-weight:700;color:#fbf1c7;text-decoration:none}html{scrollbar-width:thick;scrollbar-color:#928374 #282828}pre{scrollbar-width:thin;scrollbar-color:#928374 #282828}nav.toc{float:left;clear:left;font-size:2rem;margin-left:-28%;width:20rem;word-wrap:break-word;padding:1rem;vertical-align:baseline;position:-webkit-sticky;position:sticky;top:5vh}nav.toc a{font-size:1.4rem}nav.toc ::marker{margin:0 -1rem 0 0}nav.toc li{margin:0;padding:0;line-height:1.2}nav.toc .toc-header{font-weight:700}nav.toc ul li{list-style-position:outside}nav.toc ul{margin-top:0;margin-bottom:0}pre,code{width:100%;font-family:fira code,consolas,monospace}div.highlight.inline{display:inline}pre{white-space:pre;overflow:auto;margin:1rem 0;background-color:#1d2021;padding:1rem;border-radius:.5rem .5rem .5rem .5rem}code{word-break:break-word;padding:0 .4rem;border-radius:.3rem .3rem .3rem .3rem}html a:link{color:#689d6a;background-color:initial;text-decoration:underline}html a:visited{color:#689d6a;background-color:initial;text-decoration:underline}html a:hover{color:#8ec07c;background-color:initial;text-decoration:underline}html a:active{color:#8ec07c;background-color:initial;text-decoration:none}nav.header a:link{color:#689d6a;background-color:initial;text-decoration:none}nav.header a:visited{color:#689d6a;background-color:initial;text-decoration:none}nav.header a:hover{color:#8ec07c;background-color:initial;text-decoration:none}nav.header a:active{color:#8ec07c;background-color:initial;text-decoration:underline}nav.toc a:link{color:#689d6a;background-color:initial;text-decoration:none}nav.toc a:visited{color:#689d6a;background-color:initial;text-decoration:none}nav.toc a:hover{color:#8ec07c;background-color:initial;text-decoration:none}nav.toc a:active{color:#8ec07c;background-color:initial;text-decoration:underline}.sidenote,marginnote{width:20rem;clear:right;font-size:1.1rem;line-height:1.3;vertical-align:baseline}body{counter-set:sidenote-counter}.sidenote-number{counter-increment:sidenote-counter}.sidenote:before{content:counter(sidenote-counter)" ";position:relative;vertical-align:baseline;font-weight:700;font-size:1rem;top:-.5rem;font-size:.9em}.sidenote-number:after{content:counter(sidenote-counter);position:relative;vertical-align:baseline;font-weight:700;font-size:1rem;top:-.5rem;left:.1rem}blockquote .sidenote,blockquote .marginnote{margin-right:82%;min-width:59%;text-align:left}.sidenote>code{font-size:1rem}label.sidenote-number{display:inline-block;max-height:2rem}label.margin-toggle:not(.sidenote-number){display:none}input.margin-toggle{display:none}.post-list{margin-top:1rem}.post-list-item{margin-bottom:2rem}.post-list-item p{width:100%;margin:0}.post-description{padding-top:.5rem}.post-header-title{text-align:left}.post-header-date{text-align:right}@media all and (max-width:1439px){nav.toc{display:none}}@media all and (max-width:1439px){.sidenote,.marginnote{float:right;text-align:left;margin:1rem 0;padding-left:5%}}@media all and (min-width:1440px){.sidenote,.marginnote{float:right;margin-right:-30%;margin-top:.3rem;margin-bottom:0;position:relative}}@media all and (max-width:639px){body{width:100%;margin:0;padding:0 5%}header{margin:1rem 0}nav.header{margin:.5rem auto;text-align:center}footer{text-align:center}nav.header a{font-size:1.4rem;line-height:1.6}.logo{font-size:1.8rem}nav.header a{margin:0 .6rem}}@media all and (min-width:640px){body{width:70rem;margin:0 auto;padding:0}header{margin:0 0 3rem;padding:.6rem 0 .2rem}nav.header{display:flex;align-items:flex-end;justify-content:space-between;margin:0;text-align:right}nav.header a{font-size:1.8rem;margin:0 0 0 .6rem;display:inline}.navigation{justify-content:flex-end}footer{text-align:right}.logo{margin:0;text-align:left;font-size:2.4rem}}@media all and (max-width:1439px){.post-header{display:block}}@media all and (min-width:1440px){.post-header{display:flex}.post-header-title{padding-left:1rem}.post-description{padding-left:3rem;padding-top:.5rem}}pre{line-height:125%}td.linenos .normal{color:#3c4354;background-color:initial;padding-left:5px;padding-right:5px}span.linenos{color:#3c4354;background-color:initial;padding-left:5px;padding-right:5px}td.linenos .special{color:#3c4354;background-color:#ffffc0;padding-left:5px;padding-right:5px}span.linenos.special{color:#3c4354;background-color:#ffffc0;padding-left:5px;padding-right:5px}.hll{background-color:#6e7681}.c{color:#7e8aa1}.err{color:#f88f7f}.esc{color:#d4d2c8}.g{color:#d4d2c8}.k{color:#ffad66}.l{color:#d5ff80}.n{color:#d4d2c8}.o{color:#ffad66}.x{color:#d4d2c8}.p{color:#d4d2c8}.ch{color:#f88f7f;font-style:italic}.cm{color:#7e8aa1}.cp{color:#ffad66;font-weight:700}.cpf{color:#7e8aa1}.c1{color:#7e8aa1}.cs{color:#7e8aa1;font-style:italic}.gd{color:#f88f7f;background-color:#3d1e20}.ge{color:#d4d2c8;font-style:italic}.ges{color:#d4d2c8}.gr{color:#f88f7f}.gh{color:#d4d2c8}.gi{color:#6ad4af;background-color:#19362c}.go{color:#7e8aa1}.gp{color:#d4d2c8}.gs{color:#d4d2c8;font-weight:700}.gu{color:#d4d2c8}.gt{color:#f88f7f}.kc{color:#ffad66}.kd{color:#ffad66}.kn{color:#ffad66}.kp{color:#ffad66}.kr{color:#ffad66}.kt{color:#73d0ff}.ld{color:#d5ff80}.m{color:#dfbfff}.s{color:#d5ff80}.na{color:#ffd173}.nb{color:#ffd173}.nc{color:#73d0ff}.no{color:#ffd173}.nd{color:#7e8aa1;font-weight:700;font-style:italic}.ni{color:#95e6cb}.ne{color:#73d0ff}.nf{color:#ffd173}.nl{color:#d4d2c8}.nn{color:#d4d2c8}.nx{color:#d4d2c8}.py{color:#ffd173}.nt{color:#5ccfe6}.nv{color:#d4d2c8}.ow{color:#ffad66}.pm{color:#d4d2c8}.w{color:#d4d2c8}.mb{color:#dfbfff}.mf{color:#dfbfff}.mh{color:#dfbfff}.mi{color:#dfbfff}.mo{color:#dfbfff}.sa{color:#f29e74}.sb{color:#d5ff80}.sc{color:#d5ff80}.dl{color:#d5ff80}.sd{color:#7e8aa1}.s2{color:#d5ff80}.se{color:#95e6cb}.sh{color:#d5ff80}.si{color:#95e6cb}.sx{color:#95e6cb}.sr{color:#95e6cb}.s1{color:#d5ff80}.ss{color:#dfbfff}.bp{color:#5ccfe6}.fm{color:#ffd173}.vc{color:#d4d2c8}.vg{color:#d4d2c8}.vi{color:#d4d2c8}.vm{color:#d4d2c8}.il{color:#dfbfff}</style><link rel=preload href=../css/fonts/Montserrat-ee4ee6a.woff2 crossorigin=anonymous as=font type=font/woff2><link rel=stylesheet href=../css/katex.css media=print onload='this.media="all"'><noscript><link rel=stylesheet href=../css/katex.css></noscript><link rel="shortcut icon" href=favicon.ico type=image/x-icon><link rel="shortcut icon" href=../images/favicons/favicon32.png><link rel=apple-touch-icon-precomposed sizes=144x144 href=../images/favicons/favicon144.png><link rel=apple-touch-icon-precomposed sizes=114x114 href=../images/favicons/favicon114.png><link rel=apple-touch-icon-precomposed sizes=72x72 href=../images/favicons/favicon72.png><link rel=apple-touch-icon-precomposed sizes=57x57 href=../images/favicons/favicon57.png><header><nav class=header><a class=logo href=../>(Non-)Functional Ramblings</a><div class=navigation><a href=../about.html>About</a>
+<a href=../static/resume.pdf>Resume</a>
+<a href=../archive.html>Archive</a>
+<a href=../atom.xml>Feed</a></div></nav></header><main role=main><h1 class=title>Wait, this isn’t Haskell…</h1><article><section class=publish-date><em>Posted on December 26, 2025</em></section><section><p></p>I recently discovered a fantastic tool by the wonderful people at Well-Typed,
+<a href=https://github.com/well-typed/hs-bindgen><code>hs-bindgen</code></a>. In a previous life, I
+worked on downloading utilities in Haskell on top of something akin to the
+existing <a href=https://hackage.haskell.org/package/curl>curl</a> library on Hackage. I
+was never super happy with either that interface, nor how I used it.
+With <code>hs-bindgen</code>, I have the wonderful opportunity to scratch that itch, and
+re-explore this space a bit.<label for=sn-0 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-0 class=margin-toggle><div class=sidenote>I feel obligated to mention. I wrote the script that did the
+codegen in Python using AI. While I did have to go over bugs and rough
+edges afterward, it got quite far and most of the details were in the right
+spots. This was a great learning experience in getting to know how to do
+this AI-coding thing.</div><p></p>While <code>hs-bindgen</code> is still in active development, it can already do quite
+a lot. I usually use nix when working on personal projects so the first step
+is setting stuff up. The manual on using <code>hs-bindgen</code> is, at the time of
+writing, still quite minimal, but after looking around, I also found a <a href=https://github.com/well-typed/hs-bindgen-tutorial-nix>nix
+tutorial</a> on how to use
+it. So I pop their overlay into my flake file and set out.<div class=highlight><pre tabindex=0><span></span>  <span class=ss>libcurl-bindings</span> <span class=o>=</span> pkgs<span class=o>.</span>haskell<span class=o>.</span>lib<span class=o>.</span>compose<span class=o>.</span>generateBindings
+    <span class=l>./libcurl-bindings/generate-bindings</span>
+    <span class=p>(</span>haskellPackages<span class=o>.</span>callCabal2nix <span class=s2>&quot;libcurl-bindings&quot;</span> <span class=l>./libcurl-bindings</span>
+      <span class=p>{</span> <span class=p>});</span>
+</pre></div><p></p>Next step is to define a small wrapper around <code>hs-bindgen-cli</code> that calls it
+with the necessary arguments for generating bindings. My first attempt was
+just copying one of their example wrappers, and swapping the library out for
+libcurl<label for=sn-1 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-1 class=margin-toggle><div class=sidenote>I am in absolutely no way an expert in C or low-level languages. I’ve
+written some hobby-Rust, and I have some knowledge on RTS’s, that’s it.
+My entire career has been in high-level languages. So this blogpost
+especially, should be taken with a huge heaping teaspoon of salt.</div>.<div class=highlight><pre tabindex=0><span></span>hs-bindgen-cli<span class=w> </span>preprocess<span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;</span><span class=si>${</span><span class=nv>module_flags</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;</span><span class=si>${</span><span class=nv>libclang_flags</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;</span><span class=si>${</span><span class=nv>parse_flags</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;</span><span class=si>${</span><span class=nv>select_flags</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;</span><span class=si>${</span><span class=nv>debug_flags</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;--module&quot;</span><span class=w> </span><span class=s2>&quot;Generated.Curl.Curl&quot;</span><span class=w> </span><span class=se>\</span>
+<span class=w>    </span><span class=s2>&quot;curl/curl.h&quot;</span>
+</pre></div><p></p>Remember when I said <code>hs-bindgen</code> is in active development? This results in both
+a panic and a warning<label for=sn-2 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-2 class=margin-toggle><div class=sidenote>This post is already out-of-date with the hs-bindgen repository.
+The panic mentioned here is already fixed and now supported. Warnings
+occur when <code>hs-bindgen</code> explicitly doesn’t support something
+and refuses to emit a binding for something. Variadic functions
+are one example of something explicitly <a href=https://github.com/well-typed/hs-bindgen/issues/53>not
+supported</a>.</div>.<div class=highlight><pre tabindex=0><span></span>[Warning] [HsBindgen] [select-parse-delayed] Could not select declaration:
+  Parse failure:
+    'curl_share_setopt' at &quot;/nix/store/mbc9lm52d48cswa4ihwcs8wz5abii3xb-curl-8.17.0-dev/include/curl/curl.h:3086:24&quot;:
+      No bindings generated: Unsupported variadic (varargs) function
+PANIC!: the impossible happened
+Please report this as a bug at https://github.com/well-typed/hs-bindgen/issues/
+unexpected type void in context Top
+</pre></div><p></p><a href=https://github.com/well-typed/hs-bindgen/issues/1419>The panic’s</a> been fixed
+in the meantime, but comes from libcurl’s definition of their opaque handles,
+referenced in functions as <code>void*</code>. There are a few such definitions.<div class=highlight><pre tabindex=0><span></span><span class=k>typedef</span><span class=w> </span><span class=kt>void</span><span class=w> </span><span class=n>CURL</span><span class=p>;</span><span class=w> </span><span class=c1>// Used in curl_easy_* functions</span>
+<span class=k>typedef</span><span class=w> </span><span class=kt>void</span><span class=w> </span><span class=n>CURLSH</span><span class=p>;</span><span class=w> </span><span class=c1>// Used in curl_share_* functions</span>
+<span class=k>typedef</span><span class=w> </span><span class=kt>void</span><span class=w> </span><span class=n>CURLM</span><span class=p>;</span><span class=w> </span><span class=c1>// Used in curl_multi_* functions</span>
+</pre></div><p></p>In the absence of the fix, I could hack around this by omitting these
+definitions from the header file and swapping each name with <code>void</code>. Nix makes
+it a bit too easy to do this. Not saying this is a nice solution, but hey, I got
+it to avoid the panic.<div class=highlight><pre tabindex=0><span></span>  <span class=ss>patchedCurl</span> <span class=o>=</span> pkgs<span class=o>.</span>curlFull<span class=o>.</span>overrideAttrs <span class=p>(</span>old<span class=p>:</span>
+    <span class=k>assert</span> old<span class=o>.</span><span class=ss>version</span> <span class=o>==</span> <span class=s2>&quot;8.17.0&quot;</span><span class=p>;</span> <span class=p>{</span>
+      <span class=ss>postInstall</span> <span class=o>=</span> <span class=p>(</span>old<span class=o>.</span>postInstall <span class=ow>or</span> <span class=s2>&quot;&quot;</span><span class=p>)</span> <span class=o>+</span> <span class="s s-Multiline">''</span>
+<span class="s s-Multiline">        find $dev/include/curl -name &quot;*.h&quot; -type f -exec sed -i \</span>
+<span class="s s-Multiline">          -e '/typedef void CURL;/d' \</span>
+<span class="s s-Multiline">          -e '/typedef void CURLSH;/d' \</span>
+<span class="s s-Multiline">          -e '/typedef void CURLM;/d' \</span>
+<span class="s s-Multiline">          -e 's/\bCURL\b/void/g' \</span>
+<span class="s s-Multiline">          -e 's/\bCURLSH\b/void/g' \</span>
+<span class="s s-Multiline">          -e 's/\bCURLM\b/void/g' \</span>
+<span class="s s-Multiline">          {}</span>
+<span class="s s-Multiline">      ''</span><span class=p>;</span>
+    <span class=p>});</span>
+</pre></div><p></p>Now onto the <code>varargs</code> warning, this one’s a bit more annoying to “fix”. As it’s
+generally impossible to know what the acceptable inputs are of these functions,
+they’re skipped by hs-bindgen. <code>libcurl</code> makes quite a lot of use of these to
+create a thin interface that is flexible for future extensions. They appear in
+the following functions.<div class=highlight><pre tabindex=0><span></span><span class=n>CURL_EXTERN</span><span class=w> </span><span class=n>CURLcode</span><span class=w> </span><span class=n>curl_easy_setopt</span><span class=p>(</span><span class=n>CURL</span><span class=w> </span><span class=o>*</span><span class=n>curl</span><span class=p>,</span><span class=w> </span><span class=n>CURLoption</span><span class=w> </span><span class=n>option</span><span class=p>,</span><span class=w> </span><span class=p>...);</span>
+<span class=n>CURL_EXTERN</span><span class=w> </span><span class=n>CURLcode</span><span class=w> </span><span class=n>curl_easy_getinfo</span><span class=p>(</span><span class=n>CURL</span><span class=w> </span><span class=o>*</span><span class=n>curl</span><span class=p>,</span><span class=w> </span><span class=n>CURLINFO</span><span class=w> </span><span class=n>info</span><span class=p>,</span><span class=w> </span><span class=p>...);</span>
+<span class=n>CURL_EXTERN</span><span class=w> </span><span class=n>CURLMcode</span><span class=w> </span><span class=n>curl_multi_setopt</span><span class=p>(</span><span class=n>CURLM</span><span class=w> </span><span class=o>*</span><span class=n>multi_handle</span><span class=p>,</span><span class=n>CURLMoption</span><span class=w> </span><span class=n>option</span><span class=p>,</span><span class=w> </span><span class=p>...);</span>
+</pre></div><p></p>What all of these functions have in common is that the second argument dispatches
+the type of the third, and it is always just a single argument in the variadic
+section<label for=sn-3 class="margin-toggle sidenote-number"></label><input type=checkbox id=sn-3 class=margin-toggle><div class=sidenote>There’s also <code>curl_share_setopt</code>, but I haven’t looked at the share
+interface yet. So I may actually be off the mark.</div>. The idea that immediately jumped to mind is that I can write a type
+class that gives me the appropriate argument type, associating each dispatch
+value with a corresponding singleton.<p></p>The set of types allowed by each function is finite. While not documented in
+the online API docs from what I could see, looking at the header file gives a
+straightforward association between the option values and the corresponding
+types. In the <code>curl_easy_setopt</code> functions, the types end up defining the
+<code>X * 10_000</code> and the option value increments on top.<div class=highlight><pre tabindex=0><span></span><span class=cp>#define CURLOPTTYPE_LONG          0</span>
+<span class=cp>#define CURLOPTTYPE_OBJECTPOINT   10000</span>
+<span class=cp>#define CURLOPTTYPE_FUNCTIONPOINT 20000</span>
+<span class=cp>#define CURLOPTTYPE_OFF_T         30000</span>
+<span class=cp>#define CURLOPTTYPE_BLOB          40000</span>
+</pre></div><p></p>To sketch an example, <code>CURLOPT_PORT</code> requires a <code>long</code> integer value, while
+being the third option, so its value is <code>3</code>. Compare this to the important
+<code>CURLOPT_WRITEFUNCTION</code>, which wants a function pointer and is number eleven in
+the list, so becomes <code>20011</code>.<p></p>The next step is to actually find these dispatch values. While I could look at
+the header files, and I probably should’ve to make this transformation more
+stable, I chose to do this on the Haskell files instead. There, <code>hs-bindgen</code>
+creates pattern synonyms for each value.<div class=highlight><pre tabindex=0><span></span><span class=nf>pattern</span><span class=w> </span><span class=kt>CURLOPT_PORT</span><span class=w> </span><span class=ow>::</span><span class=w> </span><span class=kt>CURLoption</span>
+<span class=nf>pattern</span><span class=w> </span><span class=kt>CURLOPT_PORT</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=kt>CURLoption</span><span class=w> </span><span class=mi>3</span>
+
+<span class=c1>-- And a quick AI-derived regex pattern in python that gives me the binding and</span>
+<span class=c1>-- the value.</span>
+<span class=c1>--</span>
+<span class=c1>-- CURLOPT_PATTERN = re.compile(</span>
+<span class=c1>--     r&quot;^pattern\s+(CURLOPT_\w+)\s*::\s*CURLoption\s*\n&quot;</span>
+<span class=c1>--     + r&quot;pattern\s+\1\s*=\s*CURLoption\s+(\d+)&quot;,</span>
+<span class=c1>--     re.MULTILINE,</span>
+<span class=c1>-- )</span>
+</pre></div><p></p>I now need to define the FFI bindings for each type-variant for our <code>vararg</code>
+functions. I haven’t bothered to make this interface fully type-safe, so the FFI
+functions accept <code>void*</code> anytime an object pointer or callback is needed.<div class=highlight><pre tabindex=0><span></span><span class=c1>-- | curl_easy_setopt with a long argument (unsafe)</span>
+<span class=nf>foreign</span><span class=w> </span><span class=kr>import</span><span class=w> </span><span class=nn>ccall</span><span class=w> </span><span class=n>unsafe</span><span class=w> </span><span class=s>&quot;curl_easy_setopt&quot;</span>
+<span class=w>  </span><span class=n>curl_easy_setopt_long_c</span>
+<span class=w>    </span><span class=c1>-- Remember the swap we did in the header file?</span>
+<span class=w>    </span><span class=c1>-- This is where that shows up.</span>
+<span class=w>    </span><span class=ow>::</span><span class=w> </span><span class=kt>Ptr</span><span class=w> </span><span class=kt>Void</span><span class=w>        </span><span class=c1>-- ^ CURL handle</span>
+<span class=w>    </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CUInt</span><span class=w>           </span><span class=c1>-- ^ option</span>
+<span class=w>    </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CLong</span><span class=w>           </span><span class=c1>-- ^ value</span>
+<span class=w>    </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>IO</span><span class=w> </span><span class=kt>CUInt</span>
+
+<span class=c1>-- | Type-safe wrapper for curl_easy_setopt with a long argument</span>
+<span class=nf>curl_easy_setopt_long</span><span class=w> </span><span class=ow>::</span><span class=w> </span><span class=kt>Ptr</span><span class=w> </span><span class=kt>Void</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CURLoption</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CLong</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>IO</span><span class=w> </span><span class=kt>CURLcode</span>
+<span class=nf>curl_easy_setopt_long</span><span class=w> </span><span class=n>handle</span><span class=w> </span><span class=p>(</span><span class=kt>CURLoption</span><span class=w> </span><span class=n>opt</span><span class=p>)</span><span class=w> </span><span class=n>val</span><span class=w> </span><span class=ow>=</span>
+<span class=w>  </span><span class=kt>CURLcode</span><span class=w> </span><span class=o>&lt;$&gt;</span><span class=w> </span><span class=n>curl_easy_setopt_long_c</span><span class=w> </span><span class=n>handle</span><span class=w> </span><span class=n>opt</span><span class=w> </span><span class=n>val</span>
+</pre></div><p></p>With all of that in place I can start filling out this nice type class.<div class=highlight><pre tabindex=0><span></span><span class=c1>-- For `curl_easy_setopt`.</span>
+<span class=kr>class</span><span class=w> </span><span class=kt>CurlOption</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=kr>where</span>
+<span class=w>  </span><span class=kr>type</span><span class=w> </span><span class=kt>CurlOptionArgument</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=ow>::</span><span class=w> </span><span class=kt>Type</span>
+<span class=w>  </span><span class=n>curlOption</span><span class=w> </span><span class=ow>::</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CURLoption</span>
+<span class=w>  </span><span class=n>curlSetOpt</span><span class=w> </span><span class=ow>::</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>Ptr</span><span class=w> </span><span class=kt>Void</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>CurlOptionArgument</span><span class=w> </span><span class=n>c</span><span class=w> </span><span class=ow>-&gt;</span><span class=w> </span><span class=kt>IO</span><span class=w> </span><span class=kt>CURLcode</span>
+
+<span class=c1>-- example instance for curl_easy_setopt(curl, CURLOPT_PORT, port)</span>
+<span class=kr>data</span><span class=w> </span><span class=kt>CurloptPort</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=kt>CurloptPort</span>
+<span class=kr>instance</span><span class=w> </span><span class=kt>CurlOption</span><span class=w> </span><span class=kt>CurloptPort</span><span class=w> </span><span class=kr>where</span>
+<span class=w>  </span><span class=kr>type</span><span class=w> </span><span class=kt>CurlOptionArgument</span><span class=w> </span><span class=kt>CurloptPort</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=kt>CLong</span>
+<span class=w>  </span><span class=n>curlOption</span><span class=w> </span><span class=kr>_</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=kt>CURLOPT_PORT</span>
+<span class=w>  </span><span class=n>curlSetOpt</span><span class=w> </span><span class=n>opt</span><span class=w> </span><span class=n>handle</span><span class=w> </span><span class=ow>=</span><span class=w> </span><span class=n>curl_easy_setopt_long_c</span><span class=w> </span><span class=n>handle</span><span class=w> </span><span class=p>(</span><span class=n>curlOption</span><span class=w> </span><span class=n>opt</span><span class=p>)</span>
+</pre></div><p></p>After this I did some cleanup and split out the generated functions into
+separate modules to mimic libcurl’s header file setup. For my purposes, I’m
+looking at the <code>easy</code> and <code>multi</code> interfaces, so they get their own modules and
+bindspecs and <code>hs-bindgen</code> then takes care of the rest. I’ve put these bindings
+online <a href=https://github.com/crtschin/libcurl-hs>here</a>. <code>hs-bindgen</code> is great!</section></article></main><footer>Site proudly generated by <a href=http://jaspervdj.be/hakyll>Hakyll</a>.
+All content is licensed under <a href=../LICENSE.txt>3-clause BSD license</a>.</footer>
