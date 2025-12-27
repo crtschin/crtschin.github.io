@@ -65,7 +65,7 @@
     <id>https://crtschin.com/posts/harder-coded-newtypes.html</id>
     <published>2024-10-20T00:00:00Z</published>
     <updated>2024-10-20T00:00:00Z</updated>
-    <summary type="html"><![CDATA[Newtypes are generally useful to avoid parameter-blindness, but can be cumbersome if each type has it's own wrapper. I explore the use of TypeData and phantom types in Haskell as an alternative way to improve type safety and reduce developer errors.]]></summary>
+    <summary type="html"><![CDATA[Newtypes are generally useful to avoid parameter-blindness, but can be cumbersome if each type has it's own wrapper. I explore the use of TypeData as an extended way to improve type safety and reduce developer errors.]]></summary>
 </entry>
 <entry>
     <title>Lazy-ing in My Pool</title>
