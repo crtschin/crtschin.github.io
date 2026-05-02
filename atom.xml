@@ -10,8 +10,16 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2025-12-26T00:00:00Z</updated>
+    <updated>2026-05-03T00:00:00Z</updated>
     <entry>
+    <title>A Tale of Two Handles and a Segfault</title>
+    <link href="https://crtschin.com/posts/a-tale-of-two-handles.html" />
+    <id>https://crtschin.com/posts/a-tale-of-two-handles.html</id>
+    <published>2026-05-03T00:00:00Z</published>
+    <updated>2026-05-03T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Adventures in tackling race conditions and flaky tests in HLS.]]></summary>
+</entry>
+<entry>
     <title>Wait, this isn’t Haskell…</title>
     <link href="https://crtschin.com/posts/wait-this-isnt-haskell.html" />
     <id>https://crtschin.com/posts/wait-this-isnt-haskell.html</id>
@@ -82,14 +90,6 @@
     <published>2024-09-24T00:00:00Z</published>
     <updated>2024-09-24T00:00:00Z</updated>
     <summary type="html"><![CDATA[I lay out my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></summary>
-</entry>
-<entry>
-    <title>What’s in the Name?</title>
-    <link href="https://crtschin.com/posts/all-about-representations.html" />
-    <id>https://crtschin.com/posts/all-about-representations.html</id>
-    <published>2024-09-20T00:00:00Z</published>
-    <updated>2024-09-20T00:00:00Z</updated>
-    <summary type="html"><![CDATA[One of the first things functional programmers do is implement a lambda calculus interpreter. This post examines various representation methods, including first-order representations and higher-order abstract syntax (HOAS).]]></summary>
 </entry>
 
 </feed>
