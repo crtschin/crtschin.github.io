@@ -16,6 +16,11 @@
         <priority>0.8</priority>
     </url>
     <url>
+        <loc>https://crtschin.com/posts/how-to-not-write-parsers.html</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+    <url>
         <loc>https://crtschin.com/posts/a-tale-of-two-handles.html</loc>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>

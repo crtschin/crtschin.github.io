@@ -7,8 +7,16 @@
         <description><![CDATA[A blog maintained by some guy that likes functional programming.]]></description>
         <atom:link href="https://crtschin.com/rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sun, 03 May 2026 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 05 Aug 2026 00:00:00 UT</lastBuildDate>
         <item>
+    <title>How to not write parsers</title>
+    <link>https://crtschin.com/posts/how-to-not-write-parsers.html</link>
+    <description><![CDATA[Writing parsers is tricky and cumbersome, and that's even with provided grammars. This post is about approaching parsing from a different angle.]]></description>
+    <pubDate>Wed, 05 Aug 2026 00:00:00 UT</pubDate>
+    <guid>https://crtschin.com/posts/how-to-not-write-parsers.html</guid>
+    <dc:creator>Curtis Chin Jen Sem</dc:creator>
+</item>
+<item>
     <title>A Tale of Two Handles and a Segfault</title>
     <link>https://crtschin.com/posts/a-tale-of-two-handles.html</link>
     <description><![CDATA[Adventures in tackling race conditions and flaky tests in HLS.]]></description>
@@ -78,14 +86,6 @@
     <description><![CDATA[Laziness is underrated. Here I lay out a lazy initialization strategy for managing a pool of resources. It is beneficial to defer initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></description>
     <pubDate>Sun, 06 Oct 2024 00:00:00 UT</pubDate>
     <guid>https://crtschin.com/posts/lazying-in-my-pool.html</guid>
-    <dc:creator>Curtis Chin Jen Sem</dc:creator>
-</item>
-<item>
-    <title>Better than Revivify</title>
-    <link>https://crtschin.com/posts/better-than-revivify.html</link>
-    <description><![CDATA[I lay out my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></description>
-    <pubDate>Tue, 24 Sep 2024 00:00:00 UT</pubDate>
-    <guid>https://crtschin.com/posts/better-than-revivify.html</guid>
     <dc:creator>Curtis Chin Jen Sem</dc:creator>
 </item>
 

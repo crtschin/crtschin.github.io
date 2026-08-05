@@ -10,8 +10,16 @@
         <email>reverse(moc.liamg@mesnejnihcosc)</email>
         
     </author>
-    <updated>2026-05-03T00:00:00Z</updated>
+    <updated>2026-08-05T00:00:00Z</updated>
     <entry>
+    <title>How to not write parsers</title>
+    <link href="https://crtschin.com/posts/how-to-not-write-parsers.html" />
+    <id>https://crtschin.com/posts/how-to-not-write-parsers.html</id>
+    <published>2026-08-05T00:00:00Z</published>
+    <updated>2026-08-05T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Writing parsers is tricky and cumbersome, and that's even with provided grammars. This post is about approaching parsing from a different angle.]]></summary>
+</entry>
+<entry>
     <title>A Tale of Two Handles and a Segfault</title>
     <link href="https://crtschin.com/posts/a-tale-of-two-handles.html" />
     <id>https://crtschin.com/posts/a-tale-of-two-handles.html</id>
@@ -82,14 +90,6 @@
     <published>2024-10-06T00:00:00Z</published>
     <updated>2024-10-06T00:00:00Z</updated>
     <summary type="html"><![CDATA[Laziness is underrated. Here I lay out a lazy initialization strategy for managing a pool of resources. It is beneficial to defer initialization to improve performance in scenarios where not all resources are needed simultaneously.]]></summary>
-</entry>
-<entry>
-    <title>Better than Revivify</title>
-    <link href="https://crtschin.com/posts/better-than-revivify.html" />
-    <id>https://crtschin.com/posts/better-than-revivify.html</id>
-    <published>2024-09-24T00:00:00Z</published>
-    <updated>2024-09-24T00:00:00Z</updated>
-    <summary type="html"><![CDATA[I lay out my journey of revitalizing my long-neglected website, transitioning to using Hakyll. Including styling with Clay, implementing syntax highlighting with Pygments, using KaTeX for mathematical typesetting, and optimizing font usage.]]></summary>
 </entry>
 
 </feed>
