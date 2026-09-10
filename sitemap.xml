@@ -2,102 +2,94 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://crtschin.nl/about.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
-        <loc>https://crtschin.nl/index.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <loc>https://crtschin.nl/</loc>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/archive.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/how-to-not-write-parsers.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/a-tale-of-two-handles.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/wait-this-isnt-haskell.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/tastier-options.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/functional-programmers-enter-a-diner.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/human-editor-interfaces.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/can-i-pet-your-dag.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/were-all-champs-on-the-inside.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/harder-coded-newtypes.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/lazying-in-my-pool.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/better-than-revivify.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/all-about-representations.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/roly-oly-polyvariadic-boogaloo.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/roly-oly-polyvariadic.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/flooding-my-base.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/cat-amorphisms.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
     </url>
     <url>
         <loc>https://crtschin.nl/posts/shuffle-athon.html</loc>
-        <changefreq>weekly</changefreq>
-        <priority>0.8</priority>
+        <lastmod>2026-09-10</lastmod>
+    </url>
+    <url>
+        <loc>https://crtschin.nl/appendix/a-tale-of-two-handles.html</loc>
+        <lastmod>2026-09-10</lastmod>
+    </url>
+    <url>
+        <loc>https://crtschin.nl/appendix/can-i-pet-your-dag-code.html</loc>
+        <lastmod>2026-09-10</lastmod>
+    </url>
+    <url>
+        <loc>https://crtschin.nl/appendix/functional-programmers-enter-a-diner-code.html</loc>
+        <lastmod>2026-09-10</lastmod>
     </url>
 </urlset>
